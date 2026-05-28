@@ -1,0 +1,53 @@
+FUNCTION BranchAndBound(candidates, k, B):
+    Sort candidates by cost in ascending order
+    
+    PriorityQueue Q
+    best_solution = NULL
+    min_cost = INFINITY
+    nodes_visited = 0
+    branches_pruned = 0
+    
+    RootNode = {index: -1, selected: [], current_cost: 0, bound: CalculateBound(0, [])}
+    Q.enqueue(RootNode)
+    
+    WHILE Q is not empty:
+        node = Q.dequeue()
+        nodes_visited = nodes_visited + 1
+        
+        IF node.bound >= min_cost:
+            branches_pruned = branches_pruned + 1
+            CONTINUE
+            
+        IF node.current_cost > B:
+            branches_pruned = branches_pruned + 1
+            CONTINUE
+            
+        IF length(node.selected) == k:
+            IF node.current_cost < min_cost:
+                best_solution = node.selected
+                min_cost = node.current_cost
+            CONTINUE
+            
+        IF node.index + 1 < length(candidates):
+            // Branch 1: Include the next candidate
+            include_candidate = candidates[node.index + 1]
+            new_selected = node.selected + [include_candidate]
+            new_cost = node.current_cost + include_candidate.cost
+            
+            IF new_cost <= B AND length(new_selected) <= k:
+                bound = CalculateBound(node.index + 1, new_selected)
+                IF bound < min_cost:
+                    Child1 = {index: node.index + 1, selected: new_selected, current_cost: new_cost, bound: bound}
+                    Q.enqueue(Child1)
+                ELSE:
+                    branches_pruned = branches_pruned + 1
+            
+            // Branch 2: Exclude the next candidate
+            bound = CalculateBound(node.index + 1, node.selected)
+            IF bound < min_cost AND length(node.selected) + (length(candidates) - (node.index + 1)) >= k:
+                Child2 = {index: node.index + 1, selected: node.selected, current_cost: node.current_cost, bound: bound}
+                Q.enqueue(Child2)
+            ELSE:
+                branches_pruned = branches_pruned + 1
+                
+    RETURN best_solution, min_cost, nodes_visited, branches_pruned
