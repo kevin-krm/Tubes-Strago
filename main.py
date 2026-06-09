@@ -1,6 +1,6 @@
 # file: main.py
 import sys
-from utils import print_header, display_result, execution_timer
+from utils import print_header, display_result, execution_timer, export_to_txt
 from candidate import Candidate
 from csv_loader import load_csv, display_candidates
 from branch_bound import branch_and_bound
@@ -45,9 +45,24 @@ def main():
     def run_algorithm():
         return branch_and_bound(candidates, k, B)
 
-    (team, total_cost, nodes, pruned), exec_time = run_algorithm()
+    (team, total_cost, nodes_visited, nodes_generated, prune_stats, nodes_popped_and_pruned), exec_time = run_algorithm()
 
-    display_result(team, total_cost, k, B, nodes, pruned, exec_time)
+    display_result(team, total_cost, k, B, nodes_visited, nodes_generated, prune_stats, nodes_popped_and_pruned, exec_time)
+
+    # Menanyakan apakah pengguna ingin mengekspor hasil pencarian ke file TXT
+    export_choice = input("Apakah Anda ingin mengekspor hasil ke berkas TXT? (y/n): ").strip().lower()
+    if export_choice == 'y':
+        file_name = input("Masukkan nama berkas (kosongkan untuk default 'hasil_pemilihan.txt'): ").strip()
+        if not file_name:
+            file_name = "hasil_pemilihan.txt"
+        elif not file_name.endswith(".txt"):
+            file_name += ".txt"
+        
+        success, final_path = export_to_txt(file_name, team, total_cost, k, B, nodes_visited, nodes_generated, prune_stats, nodes_popped_and_pruned, exec_time)
+        if success:
+            print(f"\n[INFO] Berhasil mengekspor hasil ke berkas '{final_path}'!")
+        else:
+            print("\n[Error] Gagal mengekspor hasil.")
 
 if __name__ == "__main__":
     main()

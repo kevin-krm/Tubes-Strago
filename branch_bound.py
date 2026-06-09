@@ -44,8 +44,8 @@ def calculate_bound(candidates: list, start_index: int, selected: list,k: int, c
 # slots_needed : jumlah slot anggota yang masih dibutuhkan (integer)
 # remaining    : jumlah kandidat yang masih tersedia (integer)
 def prune_branch(bound: float, current_cost: float, B: float,best_cost: float, slots_needed: int, remaining: int) -> tuple:
-    # Jika biaya sudah melebihi anggaran, pangkas cabang
-    if current_cost > B:
+    # Jika biaya sudah melebihi anggaran atau estimasi terendah melebihi anggaran, pangkas cabang
+    if current_cost > B or bound > B:
         return True, "budget"
     # Jika solusi terbaik yang mungkin dicapai tidak lebih baik dari solusi saat ini, pangkas cabang
     if bound >= best_cost:
@@ -66,19 +66,29 @@ def branch_and_bound(candidates: list, k: int, B: float):
     best_solution = []
     min_cost = float('inf')
     nodes_visited = 0
-    branches_pruned = 0
+    nodes_generated = 0
+
+    # Statistik pruning per alasan
+    prune_stats = {
+        "budget": 0,       # Dipangkas karena melebihi anggaran
+        "bound": 0,        # Dipangkas karena bound >= best_cost
+        "feasibility": 0,  # Dipangkas karena kandidat sisa tidak cukup
+        "total": 0         # Total cabang dipangkas
+    }
+    nodes_popped_and_pruned = 0
     
     # Inisialisasi Root Node
     initial_bound = calculate_bound(candidates, 0, [], k, 0.0)
     root_node = Node(bound=initial_bound, cost=0.0, index=-1, selected=[])
     heapq.heappush(Q, root_node)
+    nodes_generated += 1
     
     while Q:
         node = heapq.heappop(Q)
         nodes_visited += 1 # Integrasi perhitungan statistik node yang dikunjungi
         
         # Pengecekan pada level node orang tua
-        is_pruned, _ = prune_branch(
+        is_pruned, reason = prune_branch(
             bound=node.bound,
             current_cost=node.cost,
             B=B,
@@ -88,7 +98,9 @@ def branch_and_bound(candidates: list, k: int, B: float):
         )
         
         if is_pruned:
-            branches_pruned += 1
+            prune_stats[reason] += 1
+            prune_stats["total"] += 1
+            nodes_popped_and_pruned += 1
             continue
             
         # Pengecekan apakah merupakan daun/solusi (memenuhi jumlah anggota k)
@@ -107,29 +119,49 @@ def branch_and_bound(candidates: list, k: int, B: float):
             new_cost = node.cost + include_candidate.cost
             
             # Pengecekan kelayakan sebelum memasukkan cabang ini ke dalam antrian
-            if new_cost <= B and len(new_selected) <= k:
-                bound1 = calculate_bound(candidates, next_idx + 1, new_selected, k, new_cost)
-                if bound1 < min_cost:
-                    child1 = Node(bound=bound1, cost=new_cost, index=next_idx, selected=new_selected)
-                    heapq.heappush(Q, child1)
+            if len(new_selected) <= k:
+                if new_cost <= B:
+                    bound1 = calculate_bound(candidates, next_idx + 1, new_selected, k, new_cost)
+                    if bound1 > B:
+                        prune_stats["budget"] += 1
+                        prune_stats["total"] += 1
+                    elif bound1 >= min_cost:
+                        prune_stats["bound"] += 1
+                        prune_stats["total"] += 1
+                    else:
+                        child1 = Node(bound=bound1, cost=new_cost, index=next_idx, selected=new_selected)
+                        heapq.heappush(Q, child1)
+                        nodes_generated += 1
                 else:
-                    branches_pruned += 1
+                    prune_stats["budget"] += 1
+                    prune_stats["total"] += 1
             else:
-                branches_pruned += 1
+                prune_stats["feasibility"] += 1
+                prune_stats["total"] += 1
                 
             # Cabang 2: TIDAK mengambil kandidat berikutnya
-            bound2 = calculate_bound(candidates, next_idx + 1, node.selected, k, node.cost)
             # Mengecek apakah jumlah sisa kandidat yang ada masih cukup jika kita tidak mengambil kandidat ini
-            if bound2 < min_cost and (len(node.selected) + (len(candidates) - (next_idx + 1)) >= k):
-                child2 = Node(bound=bound2, cost=node.cost, index=next_idx, selected=node.selected)
-                heapq.heappush(Q, child2)
+            remaining_candidates = len(candidates) - (next_idx + 1)
+            if len(node.selected) + remaining_candidates >= k:
+                bound2 = calculate_bound(candidates, next_idx + 1, node.selected, k, node.cost)
+                if bound2 > B:
+                    prune_stats["budget"] += 1
+                    prune_stats["total"] += 1
+                elif bound2 >= min_cost:
+                    prune_stats["bound"] += 1
+                    prune_stats["total"] += 1
+                else:
+                    child2 = Node(bound=bound2, cost=node.cost, index=next_idx, selected=node.selected)
+                    heapq.heappush(Q, child2)
+                    nodes_generated += 1
             else:
-                branches_pruned += 1
+                prune_stats["feasibility"] += 1
+                prune_stats["total"] += 1
                 
     if min_cost == float('inf'):
         min_cost = 0.0
 
-    return best_solution, min_cost, nodes_visited, branches_pruned
+    return best_solution, min_cost, nodes_visited, nodes_generated, prune_stats, nodes_popped_and_pruned
 
 
 # Representasi simpul (node) dalam pohon pencarian Branch and Bound.
