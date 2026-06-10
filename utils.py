@@ -32,11 +32,13 @@ def print_header(title):
 # nodes_visited   : node yang di-pop dari priority queue (integer)
 # nodes_generated : node yang pernah di-push ke priority queue (integer)
 # prune_stats     : dict berisi jumlah pruning per alasan (dict)
+# nodes_popped_and_pruned : node yang dipangkas SETELAH di-pop (node basi) (integer)
 # exec_time       : waktu eksekusi dalam detik (float)
 # lines           : list of string, setiap elemen = satu baris teks
 def build_stats_lines(n, k, B, total_cost,
                        nodes_visited, nodes_generated,
-                       prune_stats, exec_time):
+                       prune_stats, exec_time,
+                       nodes_popped_and_pruned=0):
     lines = []
 
     # Ruang Kombinasi
@@ -47,6 +49,12 @@ def build_stats_lines(n, k, B, total_cost,
     pruned_budget = prune_stats['budget']
     pruned_bound  = prune_stats['bound']
     pruned_feasib = prune_stats['feasibility']
+
+    # Pembagian pruning berdasarkan kapan terjadi:
+    # - saat pop (node basi): sudah masuk antrian lalu didominasi solusi terbaik
+    # - saat pembangkitan    : dipangkas sebelum masuk antrian (turunan)
+    pruned_at_pop = nodes_popped_and_pruned
+    pruned_at_gen = total_pruned - pruned_at_pop
 
     # Persentase pruning: dari seluruh node yang di-generate
     if nodes_generated > 0:
@@ -63,13 +71,17 @@ def build_stats_lines(n, k, B, total_cost,
     lines.append("RUANG PENCARIAN")
     lines.append(f"  Total kandidat (n)         : {n}")
     lines.append(f"  Ukuran tim (k)             : {k}")
-    lines.append(f"  Ruang kombinasi C({n},{k})  : {total_combinations:,}")
-    lines.append(f"  Node di-generate           : {nodes_generated:,}")
+    lines.append(f"  Ruang kombinasi C({n},{k})    : {total_combinations:,}")
+    lines.append(f"  Node dibangkitkan (total)  : {nodes_generated:,}")
     lines.append(f"  Node dikunjungi (di-pop)   : {nodes_visited:,}")
     lines.append("-" * 55)
 
     lines.append("PRUNING")
     lines.append(f"  Total cabang dipangkas     : {total_pruned:,}")
+    lines.append(f"    Berdasarkan waktu:")
+    lines.append(f"    - Saat pembangkitan      : {pruned_at_gen:,}")
+    lines.append(f"    - Saat pop (node basi)   : {pruned_at_pop:,}")
+    lines.append(f"    Berdasarkan alasan:")
     lines.append(f"    - Melebihi anggaran      : {pruned_budget:,}")
     lines.append(f"    - Bound >= best_cost     : {pruned_bound:,}")
     lines.append(f"    - Kandidat tidak cukup   : {pruned_feasib:,}")
@@ -83,7 +95,7 @@ def build_stats_lines(n, k, B, total_cost,
     lines.append("-" * 55)
 
     lines.append("PERFORMA")
-    lines.append(f"  Waktu eksekusi             : {exec_time:.5f} detik")
+    lines.append(f"  Waktu eksekusi             : {exec_time:.7f} detik")
 
     return lines
 
@@ -94,7 +106,7 @@ def build_stats_lines(n, k, B, total_cost,
 # n : jumlah total kandidat, dihitung dari len(all_candidates) (integer)
 def display_result(team, total_cost, k, B, nodes_visited, nodes_generated,
                    prune_stats, nodes_popped_and_pruned, exec_time,
-                   all_candidates=None):
+                   all_candidates=None, dataset_name=None):
 
     n = len(all_candidates) if all_candidates else 0
     print_header("HASIL PEMILIHAN TIM PROYEK")
@@ -103,19 +115,24 @@ def display_result(team, total_cost, k, B, nodes_visited, nodes_generated,
         print("Tidak ada kombinasi tim yang memenuhi kriteria.")
     else:
         print(f"Target Anggota Tim (k) : {k} orang")
-        print(f"Batas Anggaran (B)     : {B}\n")
+        print(f"Batas Anggaran (B)     : {B:,.2f}")
+        if dataset_name:
+            print(f"Dataset Terpilih       : {dataset_name}")
+        print()
 
         print("Daftar Anggota Tim Terpilih:")
+        print(f"  No  | ID     | {'Nama Kandidat':<20} | {'Cost':<10}")
+        print(f"  {'-' * 48}")
         for i, member in enumerate(team, start=1):
-            print(f"  {i}. {member.nama} (ID: {member.id}, Cost: {member.cost})")
-
-        print("-" * 55)
-        print(f"Total Biaya Tim        : {total_cost}")
+            print(f"  {i:<3} | {member.id:<6} | {member.nama:<20} | {member.cost:<10.2f}")
+        print(f"  {'-' * 48}")
+        print(f"  Total Biaya Tim             : {total_cost:,.2f}")
 
     print_header("STATISTIK BRANCH & BOUND")
     for line in build_stats_lines(n, k, B, total_cost,
                                    nodes_visited, nodes_generated,
-                                   prune_stats, exec_time):
+                                   prune_stats, exec_time,
+                                   nodes_popped_and_pruned):
         print(line)
     print("=" * 55 + "\n")
 
@@ -127,13 +144,27 @@ def display_result(team, total_cost, k, B, nodes_visited, nodes_generated,
 def export_to_txt(file_path, team, total_cost, k, B,
                   nodes_visited, nodes_generated,
                   prune_stats, nodes_popped_and_pruned, exec_time,
-                  all_candidates=None):
+                  all_candidates=None, dataset_name=None):
     import os
 
     n = len(all_candidates) if all_candidates else 0
-    target_path = os.path.join("exports", os.path.basename(file_path))
 
     try:
+        # Membuat folder 'exports' jika belum ada (perbaikan bug: FileNotFoundError)
+        os.makedirs("exports", exist_ok=True)
+
+        # Pisahkan nama berkas dan ekstensi untuk menangani penomoran duplikat
+        filename = os.path.basename(file_path)
+        base, ext = os.path.splitext(filename)
+        target_path = os.path.join("exports", filename)
+
+        # Loop untuk mencari nama file yang unik jika sudah ada file dengan nama yang sama
+        counter = 2
+        while os.path.exists(target_path):
+            new_filename = f"{base}_{counter}{ext}"
+            target_path = os.path.join("exports", new_filename)
+            counter += 1
+
         with open(target_path, mode='w', encoding='utf-8') as f:
             f.write("=" * 55 + "\n")
             f.write(f"{'HASIL PEMILIHAN TIM PROYEK'.center(55)}\n")
@@ -143,21 +174,26 @@ def export_to_txt(file_path, team, total_cost, k, B,
                 f.write("Tidak ada kombinasi tim yang memenuhi kriteria.\n")
             else:
                 f.write(f"Target Anggota Tim (k) : {k} orang\n")
-                f.write(f"Batas Anggaran (B)     : {B}\n\n")
+                f.write(f"Batas Anggaran (B)     : {B:,.2f}\n")
+                if dataset_name:
+                    f.write(f"Dataset Terpilih       : {dataset_name}\n")
+                f.write("\n")
 
                 f.write("Daftar Anggota Tim Terpilih:\n")
+                f.write(f"  No  | ID     | {'Nama Kandidat':<20} | {'Cost':<10}\n")
+                f.write(f"  {'-' * 48}\n")
                 for i, member in enumerate(team, start=1):
-                    f.write(f"  {i}. {member.nama} (ID: {member.id}, Cost: {member.cost})\n")
-
-                f.write("-" * 55 + "\n")
-                f.write(f"Total Biaya Tim        : {total_cost}\n")
+                    f.write(f"  {i:<3} | {member.id:<6} | {member.nama:<20} | {member.cost:<10.2f}\n")
+                f.write(f"  {'-' * 48}\n")
+                f.write(f"  Total Biaya Tim             : {total_cost:,.2f}\n")
 
             f.write("\n" + "=" * 55 + "\n")
             f.write(f"{'STATISTIK BRANCH & BOUND'.center(55)}\n")
             f.write("=" * 55 + "\n")
             for line in build_stats_lines(n, k, B, total_cost,
                                            nodes_visited, nodes_generated,
-                                           prune_stats, exec_time):
+                                           prune_stats, exec_time,
+                                           nodes_popped_and_pruned):
                 f.write(line + "\n")
             f.write("=" * 55 + "\n")
 
