@@ -30,16 +30,16 @@ Fokus pada minggu ini adalah penyelesaian seluruh fitur program, pengujian perfo
 
 | No | Kontributor (NRP) | Tugas / Fitur yang Selesai | Status Pengerjaan | Bukti / Link Kode |
 | :--- | :--- | :--- | :---: | :--- |
-| 1 | 2472018 (Kevin) | Melakukan pengujian performa program menggunakan dataset large. | Selesai (100%) | - |
-| 2 | 2472018 (Kevin) | Menerapkan fitur tambahan unik (seperti mencetak persentase pruning atau ekspor hasil ke berkas TXT). | Selesai (100%) | - |
-| 3 | 2472018 (Kevin) | Menambahkan validasi anggaran minimum: program menampilkan pesan informatif jika nilai B tidak mencukupi untuk memilih k kandidat. | Selesai (100%) | - |
+| 1 | 2472018 (Kevin) | Melakukan pengujian performa program menggunakan dataset large. | Selesai (100%) | [GitHub - large.csv](https://github.com/kevin-krm/Tubes-Strago/commit/52c6b4915dfc65d152a37ea3a1fbdcd4f9f21005#diff-93a730bd7d210e30c3c102a8c08d84dbaac61cb466bfbed67ce285e12f01b855) |
+| 2 | 2472018 (Kevin) | Menerapkan fitur tambahan unik (seperti mencetak persentase pruning atau ekspor hasil ke berkas TXT). | Selesai (100%) | [GitHub - 50e9385](https://github.com/kevin-krm/Tubes-Strago/commit/50e9385b28f27de79cfb2774a26514ff109c60e3) |
+| 3 | 2472018 (Kevin) | Menambahkan validasi anggaran minimum: program menampilkan pesan informatif jika nilai B tidak mencukupi untuk memilih k kandidat. | Selesai (100%) | [GitHub - 2771a64](https://github.com/kevin-krm/Tubes-Strago/commit/2771a6482628b9086beb592501755290b4872e64) |
 | 4 | 2472018 (Kevin) | Membuat planning dan laporan progres minggu kedua | Selesai | - |
-| 5 | 2472018 (Kevin) | Menyusun dokumen laporan akhir proyek bab analisis dan implementasi kode | 40% | - |
-| 6 | 2472029 (Henry) | Melakukan optimasi kode program agar waktu eksekusi lebih efisien | Selesai (100%) | - |
-| 7 | 2472029 (Henry) | Refaktor fungsi `branch_and_bound()` dengan mengekstrak helper `consider_child()` untuk menyatukan logika pruning kedua cabang (ambil/tidak ambil) yang sebelumnya terduplikasi. | Selesai (100%) | - |
-| 8 | 2472029 (Henry) | Merapikan fungsi display_result() untuk tampilan output terminal akhir agar informatif dan bersih. | Selesai (100%) | - |
-| 9 | 2472029 (Henry) | Menyusun dokumen laporan akhir bagian hasil pengujian statistik, serta menyiapkan materi presentasi. | 20% |  |
-| 10 | 2472029 (Henry) | Update dan konversi laporan progres minggu ketiga menjadi `.md`. | Selesai | - |
+| 5 | 2472018 (Kevin) | Menyusun dokumen laporan akhir proyek bab analisis dan implementasi kode | 50% | - |
+| 6 | 2472029 (Henry) | Melakukan optimasi kode program agar waktu eksekusi lebih efisien | Selesai (100%) | [GitHub - 2771a64](https://github.com/kevin-krm/Tubes-Strago/commit/b419d63719cf58ed13442c22345c2a835d870765) |
+| 7 | 2472029 (Henry) | Refaktor fungsi `branch_and_bound()` dengan mengekstrak helper `consider_child()` untuk menyatukan logika pruning kedua cabang (ambil/tidak ambil) yang sebelumnya terduplikasi. | Selesai (100%) | [GitHub - 2771a64](https://github.com/kevin-krm/Tubes-Strago/commit/b419d63719cf58ed13442c22345c2a835d870765) |
+| 8 | 2472029 (Henry) | Merapikan fungsi display_result() untuk tampilan output terminal akhir agar informatif dan bersih. | Selesai (100%) | [GitHub - main.py](https://github.com/kevin-krm/Tubes-Strago/commit/b419d63719cf58ed13442c22345c2a835d870765#diff-b10564ab7d2c520cdd0243874879fb0a782862c3c902ab535faabe57d5a505e1) |
+| 9 | 2472029 (Henry) | Update dan konversi laporan progres minggu ketiga menjadi `.md`. | Selesai | - |
+| 10 | 2472029 (Henry) | Menyusun dokumen laporan akhir bagian hasil pengujian statistik, serta menyiapkan materi presentasi. | 20% | - |
 
 ---
 
