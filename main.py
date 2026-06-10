@@ -39,6 +39,15 @@ def main():
         sys.exit(1)
 
     display_candidates(candidates)
+
+    # Validasi budget: cek apakah B cukup untuk memilih k orang
+    min_budget = sum(sorted(c.cost for c in candidates)[:k])
+    if B < min_budget:
+        print(f"[Error] Budget B = {B} tidak mencukupi untuk memilih {k} orang.")
+        print(f"        Minimum budget yang dibutuhkan : {min_budget}")
+        print(f"        (Dihitung dari {k} kandidat dengan biaya terendah)")
+        sys.exit(1)
+
     print(f"[INFO] Menjalankan Algoritma Branch & Bound untuk k={k}, B={B}...")
 
     @execution_timer
@@ -47,7 +56,9 @@ def main():
 
     (team, total_cost, nodes_visited, nodes_generated, prune_stats, nodes_popped_and_pruned), exec_time = run_algorithm()
 
-    display_result(team, total_cost, k, B, nodes_visited, nodes_generated, prune_stats, nodes_popped_and_pruned, exec_time)
+    display_result(
+        team, total_cost, k, B, nodes_visited, nodes_generated,prune_stats, nodes_popped_and_pruned, exec_time,all_candidates=candidates         
+    )
 
     # Menanyakan apakah pengguna ingin mengekspor hasil pencarian ke file TXT
     export_choice = input("Apakah Anda ingin mengekspor hasil ke berkas TXT? (y/n): ").strip().lower()
@@ -57,8 +68,10 @@ def main():
             file_name = "hasil_pemilihan.txt"
         elif not file_name.endswith(".txt"):
             file_name += ".txt"
-        
-        success, final_path = export_to_txt(file_name, team, total_cost, k, B, nodes_visited, nodes_generated, prune_stats, nodes_popped_and_pruned, exec_time)
+
+        success, final_path = export_to_txt(
+            file_name, team, total_cost, k, B, nodes_visited, nodes_generated, prune_stats, nodes_popped_and_pruned, exec_time, all_candidates=candidates
+        )
         if success:
             print(f"\n[INFO] Berhasil mengekspor hasil ke berkas '{final_path}'!")
         else:
