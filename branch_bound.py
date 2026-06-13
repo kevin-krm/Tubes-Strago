@@ -60,7 +60,9 @@ def prune_branch(bound: float, current_cost: float, B: float,best_cost: float, s
 
 # branch_and_bound()
 # Fungsi utama algoritma Branch and Bound untuk memilih tepat k kandidat dengan total biaya minimum yang tidak melebihi anggaran B.
-def branch_and_bound(candidates: list, k: int, B: float):
+# Parameter tracer (opsional): list yang akan diisi event proses pencarian
+# (push/pop/prune/incumbent) untuk keperluan visualisasi; None = tanpa perekaman.
+def branch_and_bound(candidates: list, k: int, B: float, tracer: list = None):
     # Mengurutkan kandidat berdasarkan cost dari yang termurah (Least Cost Search)
     candidates.sort(key=lambda x: x.cost)
     n = len(candidates)  # Simpan sekali, hindari pemanggilan len() berulang
@@ -79,6 +81,13 @@ def branch_and_bound(candidates: list, k: int, B: float):
         "total": 0         # Total cabang dipangkas
     }
     nodes_popped_and_pruned = 0
+    node_counter = 0  # ID unik per node yang dibangkitkan (root = 0), untuk tracer
+
+    # trace()
+    # Mencatat satu event proses pencarian ke tracer (jika tracer aktif)
+    def trace(**event):
+        if tracer is not None:
+            tracer.append(event)
 
     # consider_child()
     # Mengevaluasi satu cabang anak: SELALU menaikkan nodes_generated (baik anak
@@ -94,49 +103,65 @@ def branch_and_bound(candidates: list, k: int, B: float):
     # slots_needed   : slot anggota yang masih dibutuhkan (integer)
     # remaining      : jumlah kandidat yang masih tersedia setelah child_index (integer)
     # child_bound    : lower bound cabang anak (float)
-    def consider_child(child_cost, child_selected, child_index, child_count):
-        nonlocal nodes_generated
+    # parent_id      : ID node induk untuk pencatatan tracer (integer)
+    # branch         : label cabang 'include'/'exclude' untuk tracer (string)
+    def consider_child(child_cost, child_selected, child_index, child_count, parent_id, branch):
+        nonlocal nodes_generated, node_counter
         nodes_generated += 1
+        node_counter += 1
+        child_id = node_counter
 
         slots_needed = k - child_count
         remaining = n - (child_index + 1)
 
+        # prune_child()
+        # Mencatat pemangkasan anak ke statistik dan tracer dengan alasan tertentu
+        def prune_child(reason, child_bound=None):
+            prune_stats[reason] += 1
+            prune_stats["total"] += 1
+            trace(type="node", id=child_id, parent=parent_id, branch=branch,
+                  cost=child_cost, bound=child_bound, status="pruned", reason=reason,
+                  selected=[c.id for c in child_selected])
+
         # Feasibility: kandidat tersisa tidak cukup untuk memenuhi kuota k
         if remaining < slots_needed:
-            prune_stats["feasibility"] += 1
-            prune_stats["total"] += 1
+            prune_child("feasibility")
             return
         # Budget: biaya parsial sudah melebihi anggaran
         if child_cost > B:
-            prune_stats["budget"] += 1
-            prune_stats["total"] += 1
+            prune_child("budget")
             return
         # Budget: estimasi terendah (bound) melebihi anggaran
         child_bound = calculate_bound(candidates, child_index + 1, child_count, k, child_cost, n)
         if child_bound > B:
-            prune_stats["budget"] += 1
-            prune_stats["total"] += 1
+            prune_child("budget", child_bound)
             return
         # Bound: estimasi terendah tidak lebih baik dari solusi terbaik saat ini
         if child_bound >= min_cost:
-            prune_stats["bound"] += 1
-            prune_stats["total"] += 1
+            prune_child("bound", child_bound)
             return
         # Cabang layak: masukkan ke priority queue
-        heapq.heappush(Q, Node(bound=child_bound, cost=child_cost, index=child_index, selected=child_selected))
+        heapq.heappush(Q, Node(bound=child_bound, cost=child_cost, index=child_index,
+                               selected=child_selected, node_id=child_id))
+        trace(type="node", id=child_id, parent=parent_id, branch=branch,
+              cost=child_cost, bound=child_bound, status="pushed",
+              selected=[c.id for c in child_selected])
 
     # Inisialisasi Root Node (selected sebagai tuple untuk efisiensi memori)
     initial_bound = calculate_bound(candidates, 0, 0, k, 0.0, n)
-    root_node = Node(bound=initial_bound, cost=0.0, index=-1, selected=())
+    root_node = Node(bound=initial_bound, cost=0.0, index=-1, selected=(), node_id=0)
     heapq.heappush(Q, root_node)
     nodes_generated += 1
+    trace(type="node", id=0, parent=None, branch="root",
+          cost=0.0, bound=initial_bound, status="pushed", selected=[])
 
     while Q:
         node = heapq.heappop(Q)
         nodes_visited += 1 # Integrasi perhitungan statistik node yang dikunjungi
-        
+        trace(type="pop", id=node.node_id, bound=node.bound, cost=node.cost)
+
         selected_count = len(node.selected)
-        
+
         # Pengecekan pada level node orang tua
         is_pruned, reason = prune_branch(
             bound=node.bound,
@@ -146,18 +171,21 @@ def branch_and_bound(candidates: list, k: int, B: float):
             slots_needed=k - selected_count,
             remaining=n - (node.index + 1)
         )
-        
+
         if is_pruned:
             prune_stats[reason] += 1
             prune_stats["total"] += 1
             nodes_popped_and_pruned += 1
+            trace(type="prune_pop", id=node.node_id, reason=reason)
             continue
-            
+
         # Pengecekan apakah merupakan daun/solusi (memenuhi jumlah anggota k)
         if selected_count == k:
             if node.cost < min_cost:
                 best_solution = node.selected
                 min_cost = node.cost
+                trace(type="incumbent", id=node.node_id, cost=node.cost,
+                      selected=[c.id for c in node.selected])
             continue
             
         # Pembangkitan anak simpul (binary branching pada kandidat berikutnya)
@@ -171,6 +199,8 @@ def branch_and_bound(candidates: list, k: int, B: float):
                 node.selected + (include_candidate,),  # Tuple concat (lebih efisien dari list)
                 next_idx,
                 selected_count + 1,
+                node.node_id,
+                "include",
             )
 
             # Cabang 2: TIDAK mengambil kandidat berikutnya
@@ -179,6 +209,8 @@ def branch_and_bound(candidates: list, k: int, B: float):
                 node.selected,
                 next_idx,
                 selected_count,
+                node.node_id,
+                "exclude",
             )
 
     if min_cost == float('inf'):
@@ -189,7 +221,7 @@ def branch_and_bound(candidates: list, k: int, B: float):
 
 # Representasi simpul (node) dalam pohon pencarian Branch and Bound.
 class Node:
-    __slots__ = ('bound', 'cost', 'index', 'selected')
+    __slots__ = ('bound', 'cost', 'index', 'selected', 'node_id')
 
     # Konstruktor Node
     # Kamus Lokal
@@ -197,11 +229,13 @@ class Node:
     # selected        : Tuple kandidat yang sudah dipilih
     # current_cost    : Total biaya kandidat yang dipilih
     # bound           : Lower bound estimasi total biaya
-    def __init__(self, bound, cost, index, selected):
+    # node_id         : ID unik node untuk pencatatan tracer/visualisasi
+    def __init__(self, bound, cost, index, selected, node_id=0):
         self.bound = bound
         self.cost = cost
         self.index = index
         self.selected = selected
+        self.node_id = node_id
     
     # __lt__()
     # Override metode __lt__ untuk memungkinkan Node disimpan dalam PriorityQueue (min-heap)

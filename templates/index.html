@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Visualisasi Branch &amp; Bound — Pemilihan Tim Proyek</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: "Segoe UI", system-ui, sans-serif;
+    margin: 0; padding: 24px;
+    background: #f5f4ef; color: #2c2c2a;
+  }
+  .wrap { max-width: 1100px; margin: 0 auto; }
+  h1 { font-size: 20px; font-weight: 600; margin: 0 0 4px; }
+  .sub { font-size: 13px; color: #777; margin: 0 0 16px; }
+  .panel {
+    background: #fff; border: 1px solid #e0ded6;
+    border-radius: 10px; padding: 14px 16px; margin-bottom: 12px;
+  }
+  .controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .controls label { font-size: 13px; color: #555; }
+  .controls select, .controls input {
+    padding: 6px 8px; border: 1px solid #ccc9bd; border-radius: 6px;
+    font-size: 14px; background: #fff;
+  }
+  .controls input[type=number] { width: 90px; }
+  button {
+    padding: 7px 14px; border: 1px solid #ccc9bd; border-radius: 6px;
+    background: #fff; font-size: 14px; cursor: pointer;
+  }
+  button:hover { background: #f1efe8; }
+  button.primary { background: #534AB7; color: #fff; border-color: #534AB7; }
+  button.primary:hover { background: #3C3489; }
+  button:disabled { opacity: .45; cursor: default; }
+  .error { color: #A32D2D; font-size: 14px; margin-top: 8px; }
+  .grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 12px; }
+  .panel h2 { font-size: 13px; font-weight: 600; color: #777; margin: 0 0 8px; text-transform: uppercase; letter-spacing: .04em; }
+  .tree-scroll { overflow: auto; max-height: 540px; }
+  .legend { display: flex; gap: 14px; font-size: 12px; color: #666; margin-top: 8px; flex-wrap: wrap; }
+  .legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+  .lg-q::before { background: #e8e8e3; border: 1px solid #888780; }
+  .lg-c::before { background: #CECBF6; border: 1px solid #534AB7; }
+  .lg-p::before { background: #F7C1C1; border: 1px solid #A32D2D; }
+  .lg-e::before { background: #f7f7f4; border: 1px solid #c4c2b8; }
+  .lg-s::before { background: #9FE1CB; border: 1px solid #0F6E56; }
+  .mono { font-family: Consolas, monospace; font-size: 12px; }
+  #queue div { padding: 3px 8px; border-radius: 5px; line-height: 1.7; }
+  #queue div.next { background: #E6F1FB; color: #0C447C; font-weight: 600; }
+  #log { max-height: 200px; overflow-y: auto; line-height: 1.8; color: #555; }
+  #log .pr { color: #A32D2D; }
+  #log .inc { color: #0F6E56; font-weight: 600; }
+  .playbar { display: flex; gap: 10px; align-items: center; }
+  .playbar input[type=range] { flex: 1; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+  .stat { background: #f1efe8; border-radius: 8px; padding: 10px 12px; }
+  .stat .lbl { font-size: 11px; color: #777; }
+  .stat .val { font-size: 20px; font-weight: 600; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid #ece9e0; }
+  th { color: #777; font-weight: 600; font-size: 12px; }
+  td.num, th.num { text-align: right; }
+  #result { display: none; }
+  details summary { cursor: pointer; font-size: 13px; color: #555; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Visualisasi Branch &amp; Bound</h1>
+  <p class="sub">Pemilihan tim proyek: dari n kandidat pilih k orang dengan total biaya minimum &le; B</p>
+
+  <div class="panel">
+    <div class="controls">
+      <label>Dataset</label>
+      <select id="dataset">
+        <option value="small">Small (n=12)</option>
+        <option value="medium">Medium (n=18)</option>
+        <option value="large">Large (n=24)</option>
+      </select>
+      <label>k</label>
+      <input type="number" id="k" value="5" min="5" max="10">
+      <label>B</label>
+      <input type="number" id="B" value="2000">
+      <button class="primary" id="run">Jalankan</button>
+    </div>
+    <div class="error" id="error"></div>
+  </div>
+
+  <div class="grid">
+    <div class="panel">
+      <h2>Pohon pencarian</h2>
+      <div class="tree-scroll"><svg id="tree"></svg></div>
+      <div class="legend">
+        <span class="lg-q">di antrian</span>
+        <span class="lg-c">sedang diekspansi</span>
+        <span class="lg-e">sudah diekspansi</span>
+        <span class="lg-p">dipangkas</span>
+        <span class="lg-s">solusi terbaik</span>
+      </div>
+    </div>
+    <div>
+      <div class="panel">
+        <h2>Priority queue (bound terendah)</h2>
+        <div id="queue" class="mono">—</div>
+      </div>
+      <div class="panel">
+        <h2>Log langkah</h2>
+        <div id="log" class="mono">—</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel playbar">
+    <button id="prev" title="Mundur satu langkah">&larr;</button>
+    <button id="play" title="Putar">&#9654;</button>
+    <button id="next" title="Maju satu langkah">&rarr;</button>
+    <input type="range" id="slider" min="0" max="0" value="0" step="1">
+    <span id="stepLabel" class="mono" style="min-width:70px">0 / 0</span>
+    <select id="speed">
+      <option value="0.5">0.5x</option>
+      <option value="1" selected>1x</option>
+      <option value="2">2x</option>
+      <option value="4">4x</option>
+      <option value="8">8x</option>
+    </select>
+  </div>
+
+  <div class="panel">
+    <h2>Statistik</h2>
+    <div class="stats">
+      <div class="stat"><div class="lbl">Node dibangkitkan</div><div class="val" id="stGen">0</div></div>
+      <div class="stat"><div class="lbl">Node dikunjungi (pop)</div><div class="val" id="stPop">0</div></div>
+      <div class="stat"><div class="lbl">Dipangkas</div><div class="val" id="stPrune">0</div></div>
+      <div class="stat"><div class="lbl">Efisiensi pruning</div><div class="val" id="stEff">0%</div></div>
+      <div class="stat"><div class="lbl">Biaya terbaik</div><div class="val" id="stBest">&mdash;</div></div>
+    </div>
+  </div>
+
+  <div class="panel" id="result">
+    <h2>Tim terpilih</h2>
+    <table>
+      <thead><tr><th>No</th><th>ID</th><th>Nama</th><th class="num">Cost</th></tr></thead>
+      <tbody id="teamBody"></tbody>
+      <tfoot><tr><th colspan="3">Total biaya</th><th class="num" id="teamTotal"></th></tr></tfoot>
+    </table>
+  </div>
+
+  <div class="panel">
+    <details>
+      <summary>Daftar kandidat (terurut biaya)</summary>
+      <table style="margin-top:8px">
+        <thead><tr><th>ID</th><th>Nama</th><th class="num">Cost</th></tr></thead>
+        <tbody id="candBody"></tbody>
+      </table>
+    </details>
+  </div>
+</div>
+
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const REASONS = { budget: "melebihi anggaran", bound: "bound ≥ best", feasibility: "kandidat tidak cukup" };
+const COLORS = {
+  queued:   { fill: "#e8e8e3", stroke: "#888780", text: "#444441" },
+  current:  { fill: "#CECBF6", stroke: "#534AB7", text: "#26215C" },
+  expanded: { fill: "#f7f7f4", stroke: "#c4c2b8", text: "#88878a" },
+  pruned:   { fill: "#F7C1C1", stroke: "#A32D2D", text: "#791F1F" },
+  solution: { fill: "#9FE1CB", stroke: "#0F6E56", text: "#04342C" },
+};
+const XGAP = 56, YGAP = 66, R = 16;
+
+let trace = [], nodes = {}, data = null;
+let step = 0, playing = false, timer = null;
+
+// Membangun struktur pohon (children, depth, posisi x/y) dari event trace
+function buildTree() {
+  nodes = {};
+  for (const e of trace) if (e.type === "node") nodes[e.id] = Object.assign({ children: [] }, e);
+  for (const id in nodes) {
+    const nd = nodes[id];
+    if (nd.parent !== null && nodes[nd.parent]) nodes[nd.parent].children.push(nd.id);
+  }
+  let leaf = 0;
+  (function setPos(id, d) {
+    const nd = nodes[id];
+    nd.depth = d;
+    if (!nd.children.length) { nd.x = leaf++; }
+    else {
+      nd.children.forEach(c => setPos(c, d + 1));
+      nd.x = (nodes[nd.children[0]].x + nodes[nd.children[nd.children.length - 1]].x) / 2;
+    }
+  })(0, 0);
+}
+
+// Mereplay event 0..step dan menghasilkan state visual saat ini
+function computeState() {
+  const st = { status: {}, queue: [], best: null, bestId: null, lastCurrent: null,
+               counts: { gen: 0, pop: 0, pruned: 0 }, logs: [] };
+  for (let i = 0; i < step; i++) {
+    const e = trace[i];
+    if (e.type === "node") {
+      st.counts.gen++;
+      if (e.status === "pushed") {
+        st.status[e.id] = "queued";
+        st.queue.push({ id: e.id, bound: e.bound });
+        st.logs.push({ t: `+ node #${e.id} (${e.branch}) bound=${e.bound} → antrian`, c: "" });
+      } else {
+        st.status[e.id] = "pruned"; st.counts.pruned++;
+        st.logs.push({ t: `- node #${e.id} dipangkas saat pembangkitan — ${REASONS[e.reason]}`, c: "pr" });
+      }
+    } else if (e.type === "pop") {
+      st.counts.pop++;
+      st.queue = st.queue.filter(q => q.id !== e.id);
+      if (st.lastCurrent !== null && st.status[st.lastCurrent] === "current") st.status[st.lastCurrent] = "expanded";
+      st.status[e.id] = "current";
+      st.lastCurrent = e.id;
+      st.logs.push({ t: `▲ pop node #${e.id} (bound ${e.bound})`, c: "" });
+    } else if (e.type === "prune_pop") {
+      st.status[e.id] = "pruned"; st.counts.pruned++;
+      st.logs.push({ t: `- node #${e.id} dipangkas setelah pop — ${REASONS[e.reason]}`, c: "pr" });
+    } else if (e.type === "incumbent") {
+      if (st.bestId !== null && st.status[st.bestId] === "solution") st.status[st.bestId] = "expanded";
+      st.best = e.cost; st.bestId = e.id;
+      st.status[e.id] = "solution";
+      st.logs.push({ t: `★ solusi baru ditemukan: biaya ${e.cost}`, c: "inc" });
+    }
+  }
+  return st;
+}
+
+function renderTree(st) {
+  const svg = $("tree");
+  const ids = Object.keys(nodes);
+  if (!ids.length) { svg.innerHTML = ""; return; }
+  let maxX = 0, maxD = 0;
+  ids.forEach(id => { maxX = Math.max(maxX, nodes[id].x); maxD = Math.max(maxD, nodes[id].depth); });
+  const W = maxX * XGAP + 80, H = (maxD + 1) * YGAP + 20;
+  svg.setAttribute("width", W); svg.setAttribute("height", H);
+  const px = nd => nd.x * XGAP + 40, py = nd => nd.depth * YGAP + 26;
+
+  let out = "";
+  for (const id of ids) {
+    const nd = nodes[id];
+    if (nd.parent === null || !st.status[nd.id]) continue;
+    const p = nodes[nd.parent];
+    if (!st.status[p.id]) continue;
+    const dash = nd.branch === "exclude" ? ' stroke-dasharray="4 3"' : "";
+    out += `<line x1="${px(p)}" y1="${py(p)}" x2="${px(nd)}" y2="${py(nd)}" stroke="#b4b2a9" stroke-width="1.2"${dash}/>`;
+  }
+  for (const id of ids) {
+    const nd = nodes[id], s = st.status[nd.id];
+    if (!s) continue;
+    const c = COLORS[s];
+    const label = nd.bound !== null ? Math.round(nd.bound) : "—";
+    const sel = nd.selected.length ? `{${nd.selected.join(",")}}` : "{}";
+    out += `<g><title>node #${nd.id} · ${nd.branch}\ncost: ${nd.cost}\nbound: ${nd.bound ?? "-"}\nterpilih: ${sel}</title>` +
+      `<circle cx="${px(nd)}" cy="${py(nd)}" r="${R}" fill="${c.fill}" stroke="${c.stroke}" stroke-width="1.5"/>` +
+      `<text x="${px(nd)}" y="${py(nd) + 4}" text-anchor="middle" font-size="10" fill="${c.text}">${label}</text></g>`;
+  }
+  svg.innerHTML = out;
+}
+
+function render() {
+  const st = computeState();
+  renderTree(st);
+
+  const q = [...st.queue].sort((a, b) => a.bound - b.bound);
+  $("queue").innerHTML = q.length
+    ? q.slice(0, 8).map((x, i) =>
+        `<div class="${i === 0 ? "next" : ""}">bound ${x.bound} · node #${x.id}</div>`).join("") +
+      (q.length > 8 ? `<div>… +${q.length - 8} node lainnya</div>` : "")
+    : "<div>(kosong)</div>";
+
+  $("log").innerHTML = st.logs.length
+    ? st.logs.slice(-10).map(l => `<div class="${l.c}">${l.t}</div>`).join("")
+    : "—";
+  $("log").scrollTop = $("log").scrollHeight;
+
+  $("stGen").textContent = st.counts.gen;
+  $("stPop").textContent = st.counts.pop;
+  $("stPrune").textContent = st.counts.pruned;
+  $("stEff").textContent = st.counts.gen ? (st.counts.pruned / st.counts.gen * 100).toFixed(1) + "%" : "0%";
+  $("stBest").textContent = st.best !== null ? Math.round(st.best) : "—";
+
+  $("slider").value = step;
+  $("stepLabel").textContent = `${step} / ${trace.length}`;
+  $("result").style.display = (step === trace.length && data && data.team.length) ? "block" : "none";
+  $("play").innerHTML = playing ? "&#10074;&#10074;" : "&#9654;";
+}
+
+function setStep(s) {
+  step = Math.max(0, Math.min(trace.length, s));
+  if (step === trace.length) stopPlay();
+  render();
+}
+function stopPlay() { playing = false; clearInterval(timer); }
+function togglePlay() {
+  if (playing) { stopPlay(); render(); return; }
+  if (!trace.length) return;
+  if (step >= trace.length) step = 0;
+  playing = true;
+  timer = setInterval(() => setStep(step + 1), 1200 / Number($("speed").value));
+  render();
+}
+
+async function run() {
+  stopPlay();
+  $("error").textContent = "";
+  $("run").disabled = true;
+  try {
+    const res = await fetch("/api/solve", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ dataset: $("dataset").value, k: $("k").value, B: $("B").value }),
+    });
+    const body = await res.json();
+    if (!res.ok) { $("error").textContent = body.error || "Terjadi kesalahan."; return; }
+    data = body;
+    trace = body.trace;
+    buildTree();
+    $("slider").max = trace.length;
+    $("candBody").innerHTML = body.candidates.map(c =>
+      `<tr><td>${c.id}</td><td>${c.nama}</td><td class="num">${c.cost}</td></tr>`).join("");
+    $("teamBody").innerHTML = body.team.map((c, i) =>
+      `<tr><td>${i + 1}</td><td>${c.id}</td><td>${c.nama}</td><td class="num">${c.cost}</td></tr>`).join("");
+    $("teamTotal").textContent = body.total_cost;
+    setStep(0);
+    togglePlay();
+  } catch (err) {
+    $("error").textContent = "Gagal terhubung ke server: " + err.message;
+  } finally {
+    $("run").disabled = false;
+  }
+}
+
+$("run").addEventListener("click", run);
+$("play").addEventListener("click", togglePlay);
+$("prev").addEventListener("click", () => { stopPlay(); setStep(step - 1); });
+$("next").addEventListener("click", () => { stopPlay(); setStep(step + 1); });
+$("slider").addEventListener("input", e => { stopPlay(); setStep(Number(e.target.value)); });
+$("speed").addEventListener("change", () => { if (playing) { stopPlay(); togglePlay(); } });
+document.addEventListener("keydown", e => {
+  if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT") return;
+  if (e.key === "ArrowLeft") { stopPlay(); setStep(step - 1); }
+  if (e.key === "ArrowRight") { stopPlay(); setStep(step + 1); }
+  if (e.key === " ") { e.preventDefault(); togglePlay(); }
+});
+</script>
+</body>
+</html>
