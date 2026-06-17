@@ -121,7 +121,7 @@ def branch_and_bound(candidates: list, k: int, B: float, tracer: list = None):
             prune_stats["total"] += 1
             trace(type="node", id=child_id, parent=parent_id, branch=branch,
                   cost=child_cost, bound=child_bound, status="pruned", reason=reason,
-                  selected=[c.id for c in child_selected])
+                  index=child_index, selected=[c.id for c in child_selected])
 
         # Feasibility: kandidat tersisa tidak cukup untuk memenuhi kuota k
         if remaining < slots_needed:
@@ -145,7 +145,7 @@ def branch_and_bound(candidates: list, k: int, B: float, tracer: list = None):
                                selected=child_selected, node_id=child_id))
         trace(type="node", id=child_id, parent=parent_id, branch=branch,
               cost=child_cost, bound=child_bound, status="pushed",
-              selected=[c.id for c in child_selected])
+              index=child_index, selected=[c.id for c in child_selected])
 
     # Inisialisasi Root Node (selected sebagai tuple untuk efisiensi memori)
     initial_bound = calculate_bound(candidates, 0, 0, k, 0.0, n)
@@ -153,7 +153,7 @@ def branch_and_bound(candidates: list, k: int, B: float, tracer: list = None):
     heapq.heappush(Q, root_node)
     nodes_generated += 1
     trace(type="node", id=0, parent=None, branch="root",
-          cost=0.0, bound=initial_bound, status="pushed", selected=[])
+          cost=0.0, bound=initial_bound, status="pushed", index=-1, selected=[])
 
     while Q:
         node = heapq.heappop(Q)

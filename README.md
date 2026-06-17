@@ -10,8 +10,6 @@ Kontributor:
 
 Aplikasi memilih **k** kandidat dari **n** kandidat agar **total biaya minimum** dan tidak melebihi batas anggaran **B**, menggunakan algoritma **Branch & Bound** (least-cost search + pruning) untuk menjamin solusi optimal. Tersedia dua antarmuka: **CLI terminal** dan **web visualisasi** yang menampilkan jalannya pohon pencarian langkah demi langkah.
 
-* **Anggota:** 2472018 — Kevin Kornelius Martadinata · 2472029 — Henry Ferdynand Budiana
-
 ## Teknologi
 
 | Kategori | Yang dipakai |
@@ -42,7 +40,7 @@ datasets/         # small / medium / large
 
 ## Cara menjalankan
 
-### Antarmuka web (visualisasi)
+### Antarmuka web (visualisasi) lihat setup dibawah
 ```bash
 python app.py
 ```
@@ -53,9 +51,9 @@ Lalu buka **http://localhost:5000** di browser.
 python main.py
 ```
 
-## Setup saat clone ke device lain
+## Setup
 
-Sebelum menjalankan `python app.py` di komputer lain, lakukan langkah berikut:
+Bila belum ada dependency untuk aplikasi ini, lakukan langkah berikut:
 
 1. **Pastikan Python 3 terpasang** (cek: `python --version`).
 2. **(Opsional, disarankan) buat virtual environment:**
@@ -66,20 +64,24 @@ Sebelum menjalankan `python app.py` di komputer lain, lakukan langkah berikut:
    # macOS/Linux:
    source venv/bin/activate
    ```
-3. **Pasang dependensi** (hanya Flask):
+3. **Pasang dependensi**:
    ```bash
+   # install semua dependensi
    pip install -r requirements.txt
 
-   # Bila tidak bekerja
-   python -m pip install "flask>=3.0"
+   # bila tidak bekerja
+   py -m pip install -r requirements.txt
 
+   # atau install satuan
+   py -m pip install reportlab
+   py -m pip install "flask>=3.0"
    ```
-4. **Jalankan:**
+
+4. **Jalankan web server:**
    ```bash
    python app.py
    ```
 
 > Catatan:
-> - `main.py` (CLI) bisa langsung dijalankan tanpa langkah 3 karena tidak memakai Flask.
 > - Jika **port 5000** sudah dipakai aplikasi lain, set port lain via environment variable, mis. (Windows PowerShell) `$env:PORT=8000; python app.py`.
 > - Jalankan perintah dari **folder root proyek** agar path relatif ke `datasets/` dan `templates/` terbaca dengan benar.

@@ -1,9 +1,11 @@
 # file: main.py
 import sys
-from utils import print_header, display_result, execution_timer, export_to_txt
+from utils import print_header, display_result, execution_timer, export_to_txt, build_stats_lines
 from candidate import Candidate
 from csv_loader import load_csv, display_candidates
 from branch_bound import branch_and_bound
+from sensitivity import run_sensitivity, build_sensitivity_lines, K_MIN, K_MAX
+from pdf_export import build_pdf
 
 def main():
     print_header("APLIKASI PEMILIHAN TIM PROYEK (BRANCH & BOUND)")
@@ -81,22 +83,114 @@ def main():
         team, total_cost, k, B, nodes_visited, nodes_generated, prune_stats, nodes_popped_and_pruned, exec_time, all_candidates=candidates, dataset_name=dataset_name
     )
 
-    # Menanyakan apakah pengguna ingin mengekspor hasil pencarian ke file TXT
-    export_choice = input("Apakah Anda ingin mengekspor hasil ke berkas TXT? (y/n): ").strip().lower()
-    if export_choice == 'y':
-        file_name = input("Masukkan nama berkas (kosongkan untuk default 'hasil_pemilihan.txt'): ").strip()
-        if not file_name:
-            file_name = "hasil_pemilihan.txt"
-        elif not file_name.endswith(".txt"):
-            file_name += ".txt"
+    # Menu lanjutan: ekspor (TXT/PDF) dan analisis sensitivitas
+    post_result_menu(team, total_cost, k, B, candidates, dataset_name,
+                     nodes_visited, nodes_generated, prune_stats,
+                     nodes_popped_and_pruned, exec_time)
 
-        success, final_path = export_to_txt(
-            file_name, team, total_cost, k, B, nodes_visited, nodes_generated, prune_stats, nodes_popped_and_pruned, exec_time, all_candidates=candidates, dataset_name=dataset_name
-        )
-        if success:
-            print(f"\n[INFO] Berhasil mengekspor hasil ke berkas '{final_path}'!")
+
+# post_result_menu()
+# Menampilkan opsi pasca-hasil: ekspor TXT, ekspor PDF, dan analisis sensitivitas.
+# Hasil sensitivitas terakhir disimpan agar dapat disertakan ke berkas PDF.
+# Kamus Lokal:
+# last_sensitivity : dict {vary, fixed_label, rows} hasil analisis terakhir (atau None)
+# choice           : pilihan menu pengguna (string)
+def post_result_menu(team, total_cost, k, B, candidates, dataset_name,
+                     nodes_visited, nodes_generated, prune_stats,
+                     nodes_popped_and_pruned, exec_time):
+    last_sensitivity = None
+
+    while True:
+        print("\n" + "-" * 55)
+        print("OPSI LANJUTAN")
+        print("  1. Ekspor hasil ke berkas TXT")
+        print("  2. Ekspor hasil ke berkas PDF")
+        print("  3. Analisis sensitivitas (variasikan B atau k)")
+        print("  4. Selesai")
+        choice = input("Pilih opsi (1-4): ").strip()
+
+        if choice == '1':
+            file_name = input("Nama berkas (kosongkan untuk 'hasil_pemilihan.txt'): ").strip()
+            if not file_name:
+                file_name = "hasil_pemilihan.txt"
+            elif not file_name.endswith(".txt"):
+                file_name += ".txt"
+            success, final_path = export_to_txt(
+                file_name, team, total_cost, k, B, nodes_visited, nodes_generated,
+                prune_stats, nodes_popped_and_pruned, exec_time,
+                all_candidates=candidates, dataset_name=dataset_name)
+            if success:
+                print(f"\n[INFO] Berhasil mengekspor hasil ke berkas '{final_path}'!")
+            else:
+                print("\n[Error] Gagal mengekspor hasil.")
+
+        elif choice == '2':
+            stats_lines = build_stats_lines(
+                len(candidates), k, B, total_cost, nodes_visited, nodes_generated,
+                prune_stats, exec_time, nodes_popped_and_pruned)
+            file_name = input("Nama berkas (kosongkan untuk 'hasil_pemilihan.pdf'): ").strip()
+            if not file_name:
+                file_name = "hasil_pemilihan.pdf"
+            try:
+                final_path = build_pdf(
+                    file_name, team=team, total_cost=total_cost, k=k, B=B,
+                    dataset_name=dataset_name, stats_lines=stats_lines,
+                    sensitivity=last_sensitivity)
+                note = " (termasuk analisis sensitivitas)" if last_sensitivity else ""
+                print(f"\n[INFO] Berhasil mengekspor PDF ke berkas '{final_path}'!{note}")
+            except Exception as e:
+                print(f"\n[Error] Gagal mengekspor PDF: {e}")
+
+        elif choice == '3':
+            last_sensitivity = run_sensitivity_cli(candidates, k, B) or last_sensitivity
+
+        elif choice == '4':
+            break
+
         else:
-            print("\n[Error] Gagal mengekspor hasil.")
+            print("> [Notice] Pilihan tidak dikenali.")
+
+
+# run_sensitivity_cli()
+# Memandu input rentang analisis sensitivitas, menjalankannya, mencetak tabel teks,
+# dan mengembalikan dict {vary, fixed_label, rows} (atau None bila dibatalkan).
+def run_sensitivity_cli(candidates, k, B):
+    vary = input("Variasikan parameter mana? (B/k): ").strip().lower()
+    if vary == 'b':
+        vary = 'B'
+    if vary not in ('B', 'k'):
+        print("> [Notice] Pilihan parameter tidak dikenali.")
+        return None
+
+    try:
+        if vary == 'B':
+            lo = int(input("  Anggaran minimum: "))
+            hi = int(input("  Anggaran maksimum: "))
+            step = int(input("  Langkah (step): "))
+        else:
+            lo = int(input(f"  k minimum ({K_MIN}-{K_MAX}): "))
+            hi = int(input(f"  k maksimum ({K_MIN}-{K_MAX}): "))
+            step = 1
+    except ValueError:
+        print("> [Notice] Input rentang tidak valid (harus angka).")
+        return None
+
+    if step <= 0 or lo > hi:
+        print("> [Notice] Rentang tidak valid (pastikan step > 0 dan min <= max).")
+        return None
+
+    rows = run_sensitivity(candidates, k, B, vary, lo, hi, step)
+    if not rows:
+        print("> [Notice] Tidak ada titik analisis dalam rentang tersebut.")
+        return None
+
+    fixed_label = f"k = {k}" if vary == 'B' else f"B = {B:,.0f}"
+    print()
+    for line in build_sensitivity_lines(rows, vary, fixed_label):
+        print(line)
+
+    return {"vary": vary, "fixed_label": fixed_label, "rows": rows}
+
 
 if __name__ == "__main__":
     main()
