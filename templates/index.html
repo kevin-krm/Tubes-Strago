@@ -2,74 +2,155 @@
 <html lang="id" data-theme="dark">
 
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Visualisasi Branch &amp; Bound — Pemilihan Tim Proyek</title>
-<style>
-  * { box-sizing: border-box; }
-  /* ---- Tema: variabel warna struktural (light = default values) ---- */
-  :root {
-    --bg: #f5f4ef;
-    --fg: #2c2c2a;
-    --fg-muted: #777;
-    --text-soft: #555;
-    --text-faint: #666;
-    --panel-bg: #fff;
-    --panel-border: #e0ded6;
-    --input-border: #ccc9bd;
-    --btn-hover: #f1efe8;
-    --divider: #ece9e0;
-    --qnext-bg: #E6F1FB; --qnext-fg: #0C447C; --qb: #26215C;
-    --cand-inc-bg: #E4F6EE; --cand-inc-fg: #0F6E56;
-    --cand-exc-bg: #f4f3ef; --cand-exc-fg: #aaa9a3;
-    --cand-exc-badge-bg: #ece9e0; --cand-exc-badge-fg: #88877f;
-  }
-  :root[data-theme="dark"] {
-    --bg: #1c1b19;
-    --fg: #e7e5df;
-    --fg-muted: #9b988f;
-    --text-soft: #bdbab2;
-    --text-faint: #a5a299;
-    --panel-bg: #262522;
-    --panel-border: #3a3833;
-    --input-border: #4a473f;
-    --btn-hover: #33312c;
-    --divider: #34322d;
-    --qnext-bg: #1f3a52; --qnext-fg: #aacdf0; --qb: #b9b4f0;
-    --cand-inc-bg: #163b30; --cand-inc-fg: #7fd8bd;
-    --cand-exc-bg: #2a2824; --cand-exc-fg: #7d7a72;
-    --cand-exc-badge-bg: #3a3833; --cand-exc-badge-fg: #9b988f;
-  }
-  body {
-    font-family: "Segoe UI", system-ui, sans-serif;
-    margin: 0; padding: 24px;
-    background: var(--bg); color: var(--fg);
-    transition: background .25s ease, color .25s ease;
-  }
-  .wrap { max-width: 1100px; margin: 0 auto; }
-  h1 { font-size: 20px; font-weight: 600; margin: 0 0 4px; }
-  .sub { font-size: 13px; color: var(--fg-muted); margin: 0 0 16px; }
-  .panel {
-    background: var(--panel-bg); border: 1px solid var(--panel-border);
-    border-radius: 10px; padding: 14px 16px; margin-bottom: 12px;
-  }
-  .controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-  .controls label { font-size: 13px; color: var(--text-soft); }
-  .controls select, .controls input {
-    padding: 6px 8px; border: 1px solid var(--input-border); border-radius: 6px;
-    font-size: 14px; background: var(--panel-bg); color: var(--fg);
-  }
-  .controls input[type=number] { width: 90px; }
-  button {
-    padding: 7px 14px; border: 1px solid var(--input-border); border-radius: 6px;
-    background: var(--panel-bg); color: var(--fg); font-size: 14px; cursor: pointer;
-  }
-  button:hover { background: var(--btn-hover); }
-  button.primary { background: #534AB7; color: #fff; border-color: #534AB7; }
-  button.primary:hover { background: #3C3489; }
-  button:disabled { opacity: .45; cursor: default; }
-  .error { color: #A32D2D; font-size: 14px; margin-top: 8px; }
-  /* align-items: stretch (default) → panel pohon meregang setinggi kolom kanan,
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Visualisasi Branch &amp; Bound — Pemilihan Tim Proyek</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    /* ---- Tema: variabel warna struktural (light = default values) ---- */
+    :root {
+      --bg: #f5f4ef;
+      --fg: #2c2c2a;
+      --fg-muted: #777;
+      --text-soft: #555;
+      --text-faint: #666;
+      --panel-bg: #fff;
+      --panel-border: #e0ded6;
+      --input-border: #ccc9bd;
+      --btn-hover: #f1efe8;
+      --divider: #ece9e0;
+      --qnext-bg: #E6F1FB;
+      --qnext-fg: #0C447C;
+      --qb: #26215C;
+      --cand-inc-bg: #E4F6EE;
+      --cand-inc-fg: #0F6E56;
+      --cand-exc-bg: #f4f3ef;
+      --cand-exc-fg: #aaa9a3;
+      --cand-exc-badge-bg: #ece9e0;
+      --cand-exc-badge-fg: #88877f;
+    }
+
+    :root[data-theme="dark"] {
+      --bg: #1c1b19;
+      --fg: #e7e5df;
+      --fg-muted: #9b988f;
+      --text-soft: #bdbab2;
+      --text-faint: #a5a299;
+      --panel-bg: #262522;
+      --panel-border: #3a3833;
+      --input-border: #4a473f;
+      --btn-hover: #33312c;
+      --divider: #34322d;
+      --qnext-bg: #1f3a52;
+      --qnext-fg: #aacdf0;
+      --qb: #b9b4f0;
+      --cand-inc-bg: #163b30;
+      --cand-inc-fg: #7fd8bd;
+      --cand-exc-bg: #2a2824;
+      --cand-exc-fg: #7d7a72;
+      --cand-exc-badge-bg: #3a3833;
+      --cand-exc-badge-fg: #9b988f;
+    }
+
+    body {
+      font-family: "Segoe UI", system-ui, sans-serif;
+      margin: 0;
+      padding: 24px;
+      background: var(--bg);
+      color: var(--fg);
+      transition: background .25s ease, color .25s ease;
+    }
+
+    .wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-size: 20px;
+      font-weight: 600;
+      margin: 0 0 4px;
+    }
+
+    .sub {
+      font-size: 13px;
+      color: var(--fg-muted);
+      margin: 0 0 16px;
+    }
+
+    .panel {
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-bottom: 12px;
+    }
+
+    .controls {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .controls label {
+      font-size: 13px;
+      color: var(--text-soft);
+    }
+
+    .controls select,
+    .controls input {
+      padding: 6px 8px;
+      border: 1px solid var(--input-border);
+      border-radius: 6px;
+      font-size: 14px;
+      background: var(--panel-bg);
+      color: var(--fg);
+    }
+
+    .controls input[type=number] {
+      width: 90px;
+    }
+
+    button {
+      padding: 7px 14px;
+      border: 1px solid var(--input-border);
+      border-radius: 6px;
+      background: var(--panel-bg);
+      color: var(--fg);
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: var(--btn-hover);
+    }
+
+    button.primary {
+      background: #534AB7;
+      color: #fff;
+      border-color: #534AB7;
+    }
+
+    button.primary:hover {
+      background: #3C3489;
+    }
+
+    button:disabled {
+      opacity: .45;
+      cursor: default;
+    }
+
+    .error {
+      color: #A32D2D;
+      font-size: 14px;
+      margin-top: 8px;
+    }
+
+    /* align-items: stretch (default) → panel pohon meregang setinggi kolom kanan,
      sehingga bagian bawahnya sejajar dengan bagian bawah panel "Log langkah". */
     .grid {
       display: grid;
