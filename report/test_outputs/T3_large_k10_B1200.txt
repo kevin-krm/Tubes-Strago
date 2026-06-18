@@ -1,0 +1,52 @@
+=======================================================
+               HASIL PEMILIHAN TIM PROYEK              
+=======================================================
+Target Anggota Tim (k) : 10 orang
+Batas Anggaran (B)     : 1,200.00
+Dataset Terpilih       : Large
+
+Daftar Anggota Tim Terpilih:
+  No  | ID     | Nama Kandidat        | Cost      
+  ------------------------------------------------
+  1   | 6      | Fanya                | 28.00     
+  2   | 16     | Putri                | 36.00     
+  3   | 10     | Julia                | 42.00     
+  4   | 1      | Bagas                | 45.00     
+  5   | 21     | Vicky                | 50.00     
+  6   | 4      | Diana                | 55.00     
+  7   | 13     | Mahendra             | 63.00     
+  8   | 11     | Kurnia               | 78.00     
+  9   | 18     | Sandra               | 89.00     
+  10  | 7      | Galih                | 94.00     
+  ------------------------------------------------
+  Total Biaya Tim             : 580.00
+
+=======================================================
+                STATISTIK BRANCH & BOUND               
+=======================================================
+RUANG PENCARIAN
+  Total kandidat (n)         : 24
+  Ukuran tim (k)             : 10
+  Ruang kombinasi C(24,10)    : 1,961,256
+  Node dibangkitkan (total)  : 21
+  Node dikunjungi (di-pop)   : 21
+-------------------------------------------------------
+PRUNING
+  Total cabang dipangkas     : 10
+    Berdasarkan waktu:
+    - Saat pembangkitan      : 0
+    - Saat pop (node basi)   : 10
+    Berdasarkan alasan:
+    - Melebihi anggaran      : 0
+    - Bound >= best_cost     : 10
+    - Kandidat tidak cukup   : 0
+  Efisiensi pruning          : 47.6%  (10/21 node)
+-------------------------------------------------------
+ANGGARAN
+  Batas anggaran (B)         : 1,200
+  Total biaya tim terpilih   : 580
+  Budget utilization         : 48.3%  (580 / 1,200)
+-------------------------------------------------------
+PERFORMA
+  Waktu eksekusi             : 0.0000983 detik
+=======================================================

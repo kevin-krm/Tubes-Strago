@@ -1,0 +1,9 @@
+=======================================================
+      SAMPEL UJI T12 - VALIDASI ANGGARAN < MINIMUM     
+=======================================================
+[INPUT]  k = 5 ; B = 200 ; dataset = Small
+[OUTPUT]
+[Error] Budget B = 200 tidak mencukupi untuk memilih 5 orang.
+        Minimum budget yang dibutuhkan : 245.0
+        (Dihitung dari 5 kandidat dengan biaya terendah)
+  (Aplikasi meminta input diulang, program tidak berhenti.)

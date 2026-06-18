@@ -1,0 +1,61 @@
+=======================================================
+               HASIL PEMILIHAN TIM PROYEK              
+=======================================================
+Target Anggota Tim (k) : 5 orang
+Batas Anggaran (B)     : 2,000.00
+Dataset Terpilih       : Large
+
+Daftar Anggota Tim Terpilih:
+  No  | ID     | Nama Kandidat        | Cost      
+  ------------------------------------------------
+  1   | 6      | Fanya                | 28.00     
+  2   | 16     | Putri                | 36.00     
+  3   | 10     | Julia                | 42.00     
+  4   | 1      | Bagas                | 45.00     
+  5   | 21     | Vicky                | 50.00     
+  ------------------------------------------------
+  Total Biaya Tim             : 201.00
+
+=======================================================
+                STATISTIK BRANCH & BOUND               
+=======================================================
+RUANG PENCARIAN
+  Total kandidat (n)         : 24
+  Ukuran tim (k)             : 5
+  Ruang kombinasi C(24,5)    : 42,504
+  Node dibangkitkan (total)  : 11
+  Node dikunjungi (di-pop)   : 11
+-------------------------------------------------------
+PRUNING
+  Total cabang dipangkas     : 5
+    Berdasarkan waktu:
+    - Saat pembangkitan      : 0
+    - Saat pop (node basi)   : 5
+    Berdasarkan alasan:
+    - Melebihi anggaran      : 0
+    - Bound >= best_cost     : 5
+    - Kandidat tidak cukup   : 0
+  Efisiensi pruning          : 45.5%  (5/11 node)
+-------------------------------------------------------
+ANGGARAN
+  Batas anggaran (B)         : 2,000
+  Total biaya tim terpilih   : 201
+  Budget utilization         : 10.1%  (201 / 2,000)
+-------------------------------------------------------
+PERFORMA
+  Waktu eksekusi             : 0.0000697 detik
+=======================================================
+
+ANALISIS SENSITIVITAS
+  Parameter divariasikan     : Ukuran tim (k)
+  Parameter tetap            : B = 2,000
+-------------------------------------------------------
+  Ukuran tim (k) |  Total Biaya |  Node pop |  Waktu (s)
+  ---------------------------------------------------
+  5              |          201 |        11 |    0.00004
+  6              |          256 |        13 |    0.00004
+  7              |          319 |        15 |    0.00004
+  8              |          397 |        17 |    0.00012
+  9              |          486 |        19 |    0.00006
+  10             |          580 |        21 |    0.00006
+-------------------------------------------------------

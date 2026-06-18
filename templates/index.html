@@ -1,35 +1,69 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" data-theme="dark">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Visualisasi Branch &amp; Bound — Pemilihan Tim Proyek</title>
 <style>
   * { box-sizing: border-box; }
+  /* ---- Tema: variabel warna struktural (light = default values) ---- */
+  :root {
+    --bg: #f5f4ef;
+    --fg: #2c2c2a;
+    --fg-muted: #777;
+    --text-soft: #555;
+    --text-faint: #666;
+    --panel-bg: #fff;
+    --panel-border: #e0ded6;
+    --input-border: #ccc9bd;
+    --btn-hover: #f1efe8;
+    --divider: #ece9e0;
+    --qnext-bg: #E6F1FB; --qnext-fg: #0C447C; --qb: #26215C;
+    --cand-inc-bg: #E4F6EE; --cand-inc-fg: #0F6E56;
+    --cand-exc-bg: #f4f3ef; --cand-exc-fg: #aaa9a3;
+    --cand-exc-badge-bg: #ece9e0; --cand-exc-badge-fg: #88877f;
+  }
+  :root[data-theme="dark"] {
+    --bg: #1c1b19;
+    --fg: #e7e5df;
+    --fg-muted: #9b988f;
+    --text-soft: #bdbab2;
+    --text-faint: #a5a299;
+    --panel-bg: #262522;
+    --panel-border: #3a3833;
+    --input-border: #4a473f;
+    --btn-hover: #33312c;
+    --divider: #34322d;
+    --qnext-bg: #1f3a52; --qnext-fg: #aacdf0; --qb: #b9b4f0;
+    --cand-inc-bg: #163b30; --cand-inc-fg: #7fd8bd;
+    --cand-exc-bg: #2a2824; --cand-exc-fg: #7d7a72;
+    --cand-exc-badge-bg: #3a3833; --cand-exc-badge-fg: #9b988f;
+  }
   body {
     font-family: "Segoe UI", system-ui, sans-serif;
     margin: 0; padding: 24px;
-    background: #f5f4ef; color: #2c2c2a;
+    background: var(--bg); color: var(--fg);
+    transition: background .25s ease, color .25s ease;
   }
   .wrap { max-width: 1100px; margin: 0 auto; }
   h1 { font-size: 20px; font-weight: 600; margin: 0 0 4px; }
-  .sub { font-size: 13px; color: #777; margin: 0 0 16px; }
+  .sub { font-size: 13px; color: var(--fg-muted); margin: 0 0 16px; }
   .panel {
-    background: #fff; border: 1px solid #e0ded6;
+    background: var(--panel-bg); border: 1px solid var(--panel-border);
     border-radius: 10px; padding: 14px 16px; margin-bottom: 12px;
   }
   .controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-  .controls label { font-size: 13px; color: #555; }
+  .controls label { font-size: 13px; color: var(--text-soft); }
   .controls select, .controls input {
-    padding: 6px 8px; border: 1px solid #ccc9bd; border-radius: 6px;
-    font-size: 14px; background: #fff;
+    padding: 6px 8px; border: 1px solid var(--input-border); border-radius: 6px;
+    font-size: 14px; background: var(--panel-bg); color: var(--fg);
   }
   .controls input[type=number] { width: 90px; }
   button {
-    padding: 7px 14px; border: 1px solid #ccc9bd; border-radius: 6px;
-    background: #fff; font-size: 14px; cursor: pointer;
+    padding: 7px 14px; border: 1px solid var(--input-border); border-radius: 6px;
+    background: var(--panel-bg); color: var(--fg); font-size: 14px; cursor: pointer;
   }
-  button:hover { background: #f1efe8; }
+  button:hover { background: var(--btn-hover); }
   button.primary { background: #534AB7; color: #fff; border-color: #534AB7; }
   button.primary:hover { background: #3C3489; }
   button:disabled { opacity: .45; cursor: default; }
@@ -37,17 +71,29 @@
   /* align-items: stretch (default) → panel pohon meregang setinggi kolom kanan,
      sehingga bagian bawahnya sejajar dengan bagian bawah panel "Log langkah". */
   .grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 12px; }
-  .panel h2 { font-size: 13px; font-weight: 600; color: #777; margin: 0 0 8px; text-transform: uppercase; letter-spacing: .04em; }
+  .panel h2 { font-size: 13px; font-weight: 600; color: var(--fg-muted); margin: 0 0 8px; text-transform: uppercase; letter-spacing: .04em; }
   .tree-panel { display: flex; flex-direction: column; }
   .tree-scroll { overflow: auto; flex: 1; min-height: 0; }
-  .legend { display: flex; gap: 14px; font-size: 12px; color: #666; margin-top: 10px; padding-top: 10px; border-top: 1px solid #ece9e0; flex-wrap: wrap; flex-shrink: 0; }
+  .legend { display: flex; gap: 14px; font-size: 12px; color: var(--text-faint); margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--divider); flex-wrap: wrap; flex-shrink: 0; }
   .legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
   .lg-q::before { background: #e8e8e3; border: 1px solid #888780; }
   .lg-c::before { background: #CECBF6; border: 1px solid #534AB7; }
   .lg-p::before { background: #F7C1C1; border: 1px solid #A32D2D; }
   .lg-e::before { background: #f7f7f4; border: 1px solid #c4c2b8; }
   .lg-s::before { background: #9FE1CB; border: 1px solid #0F6E56; }
+  /* Swatch legenda mengikuti palet node pada tema gelap */
+  :root[data-theme="dark"] .lg-q::before { background: #3a3833; border-color: #8a877d; }
+  :root[data-theme="dark"] .lg-c::before { background: #534AB7; border-color: #CECBF6; }
+  :root[data-theme="dark"] .lg-p::before { background: #7a2e2e; border-color: #e0a0a0; }
+  :root[data-theme="dark"] .lg-e::before { background: #2e2c28; border-color: #5a574f; }
+  :root[data-theme="dark"] .lg-s::before { background: #0F6E56; border-color: #9FE1CB; }
   .mono { font-family: Consolas, monospace; font-size: 12px; }
+
+  /* ---- Header + tombol toggle tampilan ---- */
+  .appbar { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+  .theme-toggle { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; flex-shrink: 0; }
+  .theme-toggle #themeIcon { font-size: 15px; line-height: 1; }
+  .tt-label { font-size: 13px; }
 
   /* ---- Animasi pohon ---- */
   #tree circle { transition: fill .28s ease, stroke .28s ease; }
@@ -60,14 +106,14 @@
   /* ---- Priority queue ---- */
   #queue { height: 250px; overflow-y: auto; }
   #queue div { padding: 3px 8px; border-radius: 5px; line-height: 1.7; transition: background .25s; }
-  #queue div.next { background: #E6F1FB; color: #0C447C; font-weight: 600; }
-  #queue .qsel { color: #777; }
+  #queue div.next { background: var(--qnext-bg); color: var(--qnext-fg); font-weight: 600; }
+  #queue .qsel { color: var(--fg-muted); }
   #queue .qmore { color: #999; }
-  #queue b { color: #26215C; }
+  #queue b { color: var(--qb); }
 
   /* ---- Daftar kandidat live ---- */
-  .cand-head { font-size: 12px; color: #555; margin-bottom: 8px; line-height: 1.5; }
-  .cand-head b { color: #2c2c2a; }
+  .cand-head { font-size: 12px; color: var(--text-soft); margin-bottom: 8px; line-height: 1.5; }
+  .cand-head b { color: var(--fg); }
   #cands { max-height: 360px; overflow-y: auto; }
   .cand {
     display: flex; justify-content: space-between; align-items: center;
@@ -78,21 +124,21 @@
   .cand .cr { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
   .cand .badge { font-size: 10px; padding: 1px 6px; border-radius: 10px; min-width: 0; }
   .cand .cc { font-variant-numeric: tabular-nums; }
-  .cand.pend { background: #fff; color: #444; }
-  .cand.inc  { background: #E4F6EE; color: #0F6E56; }
+  .cand.pend { background: var(--panel-bg); color: var(--fg); }
+  .cand.inc  { background: var(--cand-inc-bg); color: var(--cand-inc-fg); }
   .cand.inc .badge { background: #9FE1CB; color: #04342C; }
-  .cand.exc  { background: #f4f3ef; color: #aaa9a3; }
+  .cand.exc  { background: var(--cand-exc-bg); color: var(--cand-exc-fg); }
   .cand.exc .cn { text-decoration: line-through; }
-  .cand.exc .badge { background: #ece9e0; color: #88877f; }
+  .cand.exc .badge { background: var(--cand-exc-badge-bg); color: var(--cand-exc-badge-fg); }
 
   /* ---- Log ---- */
-  #log { height: 200px; overflow-y: auto; line-height: 1.8; color: #555; }
+  #log { height: 200px; overflow-y: auto; line-height: 1.8; color: var(--text-soft); }
   #log .pr { color: #A32D2D; }
   #log .inc { color: #0F6E56; font-weight: 600; }
 
   /* ---- Progres ---- */
   #progress { width: 100%; height: 130px; display: block; }
-  .prog-legend { display: flex; gap: 16px; font-size: 12px; color: #666; margin-top: 6px; flex-wrap: wrap; }
+  .prog-legend { display: flex; gap: 16px; font-size: 12px; color: var(--text-faint); margin-top: 6px; flex-wrap: wrap; }
   .prog-legend span::before { content: ""; display: inline-block; width: 16px; height: 3px; margin-right: 6px; vertical-align: middle; border-radius: 2px; }
   .pl-best::before  { background: #0F6E56; }
   .pl-queue::before { background: #534AB7; }
@@ -101,20 +147,28 @@
   .playbar { display: flex; gap: 10px; align-items: center; }
   .playbar input[type=range] { flex: 1; }
   .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
-  .stat { background: #f1efe8; border-radius: 8px; padding: 10px 12px; }
-  .stat .lbl { font-size: 11px; color: #777; }
+  .stat { background: var(--btn-hover); border-radius: 8px; padding: 10px 12px; }
+  .stat .lbl { font-size: 11px; color: var(--fg-muted); }
   .stat .val { font-size: 20px; font-weight: 600; }
   table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid #ece9e0; }
-  th { color: #777; font-weight: 600; font-size: 12px; }
+  th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--divider); }
+  th { color: var(--fg-muted); font-weight: 600; font-size: 12px; }
   td.num, th.num { text-align: right; }
   #result { display: none; }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>Visualisasi Branch &amp; Bound</h1>
-  <p class="sub">Pemilihan tim proyek: dari n kandidat pilih k orang dengan total biaya minimum &le; B</p>
+  <div class="appbar">
+    <div>
+      <h1>Visualisasi Branch &amp; Bound</h1>
+      <p class="sub">Pemilihan tim proyek: dari n kandidat pilih k orang dengan total biaya minimum &le; B</p>
+    </div>
+    <button id="themeToggle" class="theme-toggle" title="Ganti tampilan terang/gelap"
+            aria-label="Ganti tampilan terang atau gelap">
+      <span id="themeIcon">&#9790;</span> <span class="tt-label">View Appearance</span>
+    </button>
+  </div>
 
   <div class="panel">
     <div class="controls">
@@ -239,13 +293,22 @@
 "use strict";
 const $ = id => document.getElementById(id);
 const REASONS = { budget: "melebihi anggaran", bound: "bound ≥ best", feasibility: "kandidat tidak cukup" };
-const COLORS = {
+const COLORS_LIGHT = {
   queued:   { fill: "#e8e8e3", stroke: "#888780", text: "#444441" },
   current:  { fill: "#CECBF6", stroke: "#534AB7", text: "#26215C" },
   expanded: { fill: "#f7f7f4", stroke: "#c4c2b8", text: "#88878a" },
   pruned:   { fill: "#F7C1C1", stroke: "#A32D2D", text: "#791F1F" },
   solution: { fill: "#9FE1CB", stroke: "#0F6E56", text: "#04342C" },
 };
+const COLORS_DARK = {
+  queued:   { fill: "#3a3833", stroke: "#8a877d", text: "#d8d5cc" },
+  current:  { fill: "#534AB7", stroke: "#CECBF6", text: "#ffffff" },
+  expanded: { fill: "#2e2c28", stroke: "#5a574f", text: "#9b988f" },
+  pruned:   { fill: "#7a2e2e", stroke: "#e0a0a0", text: "#f7d6d6" },
+  solution: { fill: "#0F6E56", stroke: "#9FE1CB", text: "#eafff7" },
+};
+// Palet aktif; di-switch oleh applyTheme() (default dark mengikuti tema halaman).
+let COLORS = COLORS_DARK;
 const XGAP = 56, YGAP = 66, R = 16;
 const PW = 520, PH = 130;            // viewBox grafik progres
 
@@ -674,6 +737,24 @@ async function downloadPdf() {
   }
 }
 
+// ---- Tema terang/gelap ----
+const THEME_KEY = "bb-theme";
+function applyTheme(t) {
+  document.documentElement.setAttribute("data-theme", t);
+  COLORS = (t === "dark") ? COLORS_DARK : COLORS_LIGHT;
+  $("themeIcon").innerHTML = (t === "dark") ? "&#9790;" : "&#9728;"; // ☾ / ☀
+  if (trace.length) render(); // gambar ulang SVG pohon dengan palet baru
+}
+function toggleTheme() {
+  const next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
+  localStorage.setItem(THEME_KEY, next);
+  applyTheme(next);
+}
+function initTheme() {
+  applyTheme(localStorage.getItem(THEME_KEY) || "dark"); // default dark
+}
+
+$("themeToggle").addEventListener("click", toggleTheme);
 $("run").addEventListener("click", run);
 $("pdf").addEventListener("click", downloadPdf);
 $("sRun").addEventListener("click", runSensitivity);
@@ -688,6 +769,8 @@ document.addEventListener("keydown", e => {
   if (e.key === "ArrowRight") { stopPlay(); setStep(step + 1); }
   if (e.key === " ") { e.preventDefault(); togglePlay(); }
 });
+
+initTheme();
 </script>
 </body>
 </html>
