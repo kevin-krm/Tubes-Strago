@@ -1,776 +1,1200 @@
 <!DOCTYPE html>
 <html lang="id" data-theme="dark">
+
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Visualisasi Branch &amp; Bound — Pemilihan Tim Proyek</title>
-<style>
-  * { box-sizing: border-box; }
-  /* ---- Tema: variabel warna struktural (light = default values) ---- */
-  :root {
-    --bg: #f5f4ef;
-    --fg: #2c2c2a;
-    --fg-muted: #777;
-    --text-soft: #555;
-    --text-faint: #666;
-    --panel-bg: #fff;
-    --panel-border: #e0ded6;
-    --input-border: #ccc9bd;
-    --btn-hover: #f1efe8;
-    --divider: #ece9e0;
-    --qnext-bg: #E6F1FB; --qnext-fg: #0C447C; --qb: #26215C;
-    --cand-inc-bg: #E4F6EE; --cand-inc-fg: #0F6E56;
-    --cand-exc-bg: #f4f3ef; --cand-exc-fg: #aaa9a3;
-    --cand-exc-badge-bg: #ece9e0; --cand-exc-badge-fg: #88877f;
-  }
-  :root[data-theme="dark"] {
-    --bg: #1c1b19;
-    --fg: #e7e5df;
-    --fg-muted: #9b988f;
-    --text-soft: #bdbab2;
-    --text-faint: #a5a299;
-    --panel-bg: #262522;
-    --panel-border: #3a3833;
-    --input-border: #4a473f;
-    --btn-hover: #33312c;
-    --divider: #34322d;
-    --qnext-bg: #1f3a52; --qnext-fg: #aacdf0; --qb: #b9b4f0;
-    --cand-inc-bg: #163b30; --cand-inc-fg: #7fd8bd;
-    --cand-exc-bg: #2a2824; --cand-exc-fg: #7d7a72;
-    --cand-exc-badge-bg: #3a3833; --cand-exc-badge-fg: #9b988f;
-  }
-  body {
-    font-family: "Segoe UI", system-ui, sans-serif;
-    margin: 0; padding: 24px;
-    background: var(--bg); color: var(--fg);
-    transition: background .25s ease, color .25s ease;
-  }
-  .wrap { max-width: 1100px; margin: 0 auto; }
-  h1 { font-size: 20px; font-weight: 600; margin: 0 0 4px; }
-  .sub { font-size: 13px; color: var(--fg-muted); margin: 0 0 16px; }
-  .panel {
-    background: var(--panel-bg); border: 1px solid var(--panel-border);
-    border-radius: 10px; padding: 14px 16px; margin-bottom: 12px;
-  }
-  .controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-  .controls label { font-size: 13px; color: var(--text-soft); }
-  .controls select, .controls input {
-    padding: 6px 8px; border: 1px solid var(--input-border); border-radius: 6px;
-    font-size: 14px; background: var(--panel-bg); color: var(--fg);
-  }
-  .controls input[type=number] { width: 90px; }
-  button {
-    padding: 7px 14px; border: 1px solid var(--input-border); border-radius: 6px;
-    background: var(--panel-bg); color: var(--fg); font-size: 14px; cursor: pointer;
-  }
-  button:hover { background: var(--btn-hover); }
-  button.primary { background: #534AB7; color: #fff; border-color: #534AB7; }
-  button.primary:hover { background: #3C3489; }
-  button:disabled { opacity: .45; cursor: default; }
-  .error { color: #A32D2D; font-size: 14px; margin-top: 8px; }
-  /* align-items: stretch (default) → panel pohon meregang setinggi kolom kanan,
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Visualisasi Branch &amp; Bound — Pemilihan Tim Proyek</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    /* ---- Tema: variabel warna struktural (light = default values) ---- */
+    :root {
+      --bg: #f5f4ef;
+      --fg: #2c2c2a;
+      --fg-muted: #777;
+      --text-soft: #555;
+      --text-faint: #666;
+      --panel-bg: #fff;
+      --panel-border: #e0ded6;
+      --input-border: #ccc9bd;
+      --btn-hover: #f1efe8;
+      --divider: #ece9e0;
+      --qnext-bg: #E6F1FB;
+      --qnext-fg: #0C447C;
+      --qb: #26215C;
+      --cand-inc-bg: #E4F6EE;
+      --cand-inc-fg: #0F6E56;
+      --cand-exc-bg: #f4f3ef;
+      --cand-exc-fg: #aaa9a3;
+      --cand-exc-badge-bg: #ece9e0;
+      --cand-exc-badge-fg: #88877f;
+    }
+
+    :root[data-theme="dark"] {
+      --bg: #1c1b19;
+      --fg: #e7e5df;
+      --fg-muted: #9b988f;
+      --text-soft: #bdbab2;
+      --text-faint: #a5a299;
+      --panel-bg: #262522;
+      --panel-border: #3a3833;
+      --input-border: #4a473f;
+      --btn-hover: #33312c;
+      --divider: #34322d;
+      --qnext-bg: #1f3a52;
+      --qnext-fg: #aacdf0;
+      --qb: #b9b4f0;
+      --cand-inc-bg: #163b30;
+      --cand-inc-fg: #7fd8bd;
+      --cand-exc-bg: #2a2824;
+      --cand-exc-fg: #7d7a72;
+      --cand-exc-badge-bg: #3a3833;
+      --cand-exc-badge-fg: #9b988f;
+    }
+
+    body {
+      font-family: "Segoe UI", system-ui, sans-serif;
+      margin: 0;
+      padding: 24px;
+      background: var(--bg);
+      color: var(--fg);
+      transition: background .25s ease, color .25s ease;
+    }
+
+    .wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-size: 20px;
+      font-weight: 600;
+      margin: 0 0 4px;
+    }
+
+    .sub {
+      font-size: 13px;
+      color: var(--fg-muted);
+      margin: 0 0 16px;
+    }
+
+    .panel {
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-bottom: 12px;
+    }
+
+    .controls {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .controls label {
+      font-size: 13px;
+      color: var(--text-soft);
+    }
+
+    .controls select,
+    .controls input {
+      padding: 6px 8px;
+      border: 1px solid var(--input-border);
+      border-radius: 6px;
+      font-size: 14px;
+      background: var(--panel-bg);
+      color: var(--fg);
+    }
+
+    .controls input[type=number] {
+      width: 90px;
+    }
+
+    button {
+      padding: 7px 14px;
+      border: 1px solid var(--input-border);
+      border-radius: 6px;
+      background: var(--panel-bg);
+      color: var(--fg);
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: var(--btn-hover);
+    }
+
+    button.primary {
+      background: #534AB7;
+      color: #fff;
+      border-color: #534AB7;
+    }
+
+    button.primary:hover {
+      background: #3C3489;
+    }
+
+    button:disabled {
+      opacity: .45;
+      cursor: default;
+    }
+
+    .error {
+      color: #A32D2D;
+      font-size: 14px;
+      margin-top: 8px;
+    }
+
+    /* align-items: stretch (default) → panel pohon meregang setinggi kolom kanan,
      sehingga bagian bawahnya sejajar dengan bagian bawah panel "Log langkah". */
-  .grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 12px; }
-  .panel h2 { font-size: 13px; font-weight: 600; color: var(--fg-muted); margin: 0 0 8px; text-transform: uppercase; letter-spacing: .04em; }
-  .tree-panel { display: flex; flex-direction: column; }
-  .tree-scroll { overflow: auto; flex: 1; min-height: 0; }
-  .legend { display: flex; gap: 14px; font-size: 12px; color: var(--text-faint); margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--divider); flex-wrap: wrap; flex-shrink: 0; }
-  .legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
-  .lg-q::before { background: #e8e8e3; border: 1px solid #888780; }
-  .lg-c::before { background: #CECBF6; border: 1px solid #534AB7; }
-  .lg-p::before { background: #F7C1C1; border: 1px solid #A32D2D; }
-  .lg-e::before { background: #f7f7f4; border: 1px solid #c4c2b8; }
-  .lg-s::before { background: #9FE1CB; border: 1px solid #0F6E56; }
-  /* Swatch legenda mengikuti palet node pada tema gelap */
-  :root[data-theme="dark"] .lg-q::before { background: #3a3833; border-color: #8a877d; }
-  :root[data-theme="dark"] .lg-c::before { background: #534AB7; border-color: #CECBF6; }
-  :root[data-theme="dark"] .lg-p::before { background: #7a2e2e; border-color: #e0a0a0; }
-  :root[data-theme="dark"] .lg-e::before { background: #2e2c28; border-color: #5a574f; }
-  :root[data-theme="dark"] .lg-s::before { background: #0F6E56; border-color: #9FE1CB; }
-  .mono { font-family: Consolas, monospace; font-size: 12px; }
-
-  /* ---- Header + tombol toggle tampilan ---- */
-  .appbar { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
-  .theme-toggle { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; flex-shrink: 0; }
-  .theme-toggle #themeIcon { font-size: 15px; line-height: 1; }
-  .tt-label { font-size: 13px; }
-
-  /* ---- Animasi pohon ---- */
-  #tree circle { transition: fill .28s ease, stroke .28s ease; }
-  #tree text { transition: fill .28s ease; }
-  #tree g.enter { animation: fadeIn .3s ease; }
-  #tree g.current circle { animation: pulse 1.1s ease-in-out infinite; }
-  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-  @keyframes pulse { 0%, 100% { stroke-width: 1.5; } 50% { stroke-width: 4; } }
-
-  /* ---- Priority queue ---- */
-  #queue { height: 250px; overflow-y: auto; }
-  #queue div { padding: 3px 8px; border-radius: 5px; line-height: 1.7; transition: background .25s; }
-  #queue div.next { background: var(--qnext-bg); color: var(--qnext-fg); font-weight: 600; }
-  #queue .qsel { color: var(--fg-muted); }
-  #queue .qmore { color: #999; }
-  #queue b { color: var(--qb); }
-
-  /* ---- Daftar kandidat live ---- */
-  .cand-head { font-size: 12px; color: var(--text-soft); margin-bottom: 8px; line-height: 1.5; }
-  .cand-head b { color: var(--fg); }
-  #cands { max-height: 360px; overflow-y: auto; }
-  .cand {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 4px 8px; border-radius: 6px; margin-bottom: 3px;
-    transition: background .25s ease, color .25s ease, opacity .25s ease;
-  }
-  .cand .cn { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .cand .cr { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-  .cand .badge { font-size: 10px; padding: 1px 6px; border-radius: 10px; min-width: 0; }
-  .cand .cc { font-variant-numeric: tabular-nums; }
-  .cand.pend { background: var(--panel-bg); color: var(--fg); }
-  .cand.inc  { background: var(--cand-inc-bg); color: var(--cand-inc-fg); }
-  .cand.inc .badge { background: #9FE1CB; color: #04342C; }
-  .cand.exc  { background: var(--cand-exc-bg); color: var(--cand-exc-fg); }
-  .cand.exc .cn { text-decoration: line-through; }
-  .cand.exc .badge { background: var(--cand-exc-badge-bg); color: var(--cand-exc-badge-fg); }
-
-  /* ---- Log ---- */
-  #log { height: 200px; overflow-y: auto; line-height: 1.8; color: var(--text-soft); }
-  #log .pr { color: #A32D2D; }
-  #log .inc { color: #0F6E56; font-weight: 600; }
-
-  /* ---- Progres ---- */
-  #progress { width: 100%; height: 130px; display: block; }
-  .prog-legend { display: flex; gap: 16px; font-size: 12px; color: var(--text-faint); margin-top: 6px; flex-wrap: wrap; }
-  .prog-legend span::before { content: ""; display: inline-block; width: 16px; height: 3px; margin-right: 6px; vertical-align: middle; border-radius: 2px; }
-  .pl-best::before  { background: #0F6E56; }
-  .pl-queue::before { background: #534AB7; }
-  .pl-cur::before   { background: #A32D2D; height: 0; border-top: 2px dashed #A32D2D; }
-
-  .playbar { display: flex; gap: 10px; align-items: center; }
-  .playbar input[type=range] { flex: 1; }
-  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
-  .stat { background: var(--btn-hover); border-radius: 8px; padding: 10px 12px; }
-  .stat .lbl { font-size: 11px; color: var(--fg-muted); }
-  .stat .val { font-size: 20px; font-weight: 600; }
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--divider); }
-  th { color: var(--fg-muted); font-weight: 600; font-size: 12px; }
-  td.num, th.num { text-align: right; }
-  #result { display: none; }
-</style>
-</head>
-<body>
-<div class="wrap">
-  <div class="appbar">
-    <div>
-      <h1>Visualisasi Branch &amp; Bound</h1>
-      <p class="sub">Pemilihan tim proyek: dari n kandidat pilih k orang dengan total biaya minimum &le; B</p>
-    </div>
-    <button id="themeToggle" class="theme-toggle" title="Ganti tampilan terang/gelap"
-            aria-label="Ganti tampilan terang atau gelap">
-      <span id="themeIcon">&#9790;</span> <span class="tt-label">View Appearance</span>
-    </button>
-  </div>
-
-  <div class="panel">
-    <div class="controls">
-      <label>Dataset</label>
-      <select id="dataset">
-        <option value="small">Small (n=12)</option>
-        <option value="medium">Medium (n=18)</option>
-        <option value="large">Large (n=24)</option>
-      </select>
-      <label>k</label>
-      <input type="number" id="k" value="5" min="5" max="10">
-      <label>B</label>
-      <input type="number" id="B" value="2000">
-      <button class="primary" id="run">Jalankan</button>
-      <button id="pdf" disabled title="Ekspor hasil ke PDF">Unduh PDF</button>
-    </div>
-    <div class="error" id="error"></div>
-  </div>
-
-  <div class="grid">
-    <div class="panel tree-panel">
-      <h2>Pohon pencarian</h2>
-      <div class="tree-scroll"><svg id="tree"></svg></div>
-      <div class="legend">
-        <span class="lg-q">di antrian</span>
-        <span class="lg-c">sedang diekspansi</span>
-        <span class="lg-e">sudah diekspansi</span>
-        <span class="lg-p">dipangkas</span>
-        <span class="lg-s">solusi terbaik</span>
-      </div>
-    </div>
-    <div>
-      <div class="panel">
-        <h2>Daftar kandidat (terurut biaya)</h2>
-        <div class="cand-head" id="candHead">Belum dijalankan.</div>
-        <div id="cands" class="mono">—</div>
-      </div>
-      <div class="panel">
-        <h2>Priority queue (bound terendah)</h2>
-        <div id="queue" class="mono">—</div>
-      </div>
-      <div class="panel">
-        <h2>Log langkah</h2>
-        <div id="log" class="mono">—</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="panel playbar">
-    <button id="prev" title="Mundur satu langkah">&larr;</button>
-    <button id="play" title="Putar">&#9654;</button>
-    <button id="next" title="Maju satu langkah">&rarr;</button>
-    <input type="range" id="slider" min="0" max="0" value="0" step="1">
-    <span id="stepLabel" class="mono" style="min-width:70px">0 / 0</span>
-    <select id="speed">
-      <option value="0.5">0.5x</option>
-      <option value="1" selected>1x</option>
-      <option value="2">2x</option>
-      <option value="4">4x</option>
-      <option value="8">8x</option>
-    </select>
-  </div>
-
-  <div class="panel">
-    <h2>Progres pencarian</h2>
-    <svg id="progress" viewBox="0 0 520 130" preserveAspectRatio="none"></svg>
-    <div class="prog-legend">
-      <span class="pl-best">Biaya terbaik (incumbent)</span>
-      <span class="pl-queue">Ukuran antrian</span>
-      <span class="pl-cur">Langkah saat ini</span>
-    </div>
-  </div>
-
-  <div class="panel">
-    <h2>Statistik</h2>
-    <div class="stats">
-      <div class="stat"><div class="lbl">Node dibangkitkan</div><div class="val" id="stGen">0</div></div>
-      <div class="stat"><div class="lbl">Node dikunjungi (pop)</div><div class="val" id="stPop">0</div></div>
-      <div class="stat"><div class="lbl">Dipangkas</div><div class="val" id="stPrune">0</div></div>
-      <div class="stat"><div class="lbl">Efisiensi pruning</div><div class="val" id="stEff">0%</div></div>
-      <div class="stat"><div class="lbl">Biaya terbaik</div><div class="val" id="stBest">&mdash;</div></div>
-    </div>
-  </div>
-
-  <div class="panel">
-    <h2>Analisis sensitivitas (what-if)</h2>
-    <div class="controls">
-      <label>Variasikan</label>
-      <select id="varyParam">
-        <option value="B">Anggaran (B)</option>
-        <option value="k">Ukuran tim (k)</option>
-      </select>
-      <label>Min</label>
-      <input type="number" id="sLo" value="1500">
-      <label>Max</label>
-      <input type="number" id="sHi" value="3000">
-      <label>Langkah</label>
-      <input type="number" id="sStep" value="250">
-      <button id="sRun" disabled>Jalankan analisis</button>
-    </div>
-    <div class="error" id="sError"></div>
-    <svg id="sensChart" viewBox="0 0 520 160" preserveAspectRatio="none"
-         style="width:100%;height:160px;display:none;margin-top:12px"></svg>
-    <div class="prog-legend" id="sensLegend" style="display:none">
-      <span class="pl-best">Total biaya</span>
-      <span class="pl-queue">Node dikunjungi (pop)</span>
-    </div>
-    <div id="sensTableWrap" style="margin-top:12px"></div>
-  </div>
-
-  <div class="panel" id="result">
-    <h2>Tim terpilih</h2>
-    <table>
-      <thead><tr><th>No</th><th>ID</th><th>Nama</th><th class="num">Cost</th></tr></thead>
-      <tbody id="teamBody"></tbody>
-      <tfoot><tr><th colspan="3">Total biaya</th><th class="num" id="teamTotal"></th></tr></tfoot>
-    </table>
-  </div>
-</div>
-
-<script>
-"use strict";
-const $ = id => document.getElementById(id);
-const REASONS = { budget: "melebihi anggaran", bound: "bound ≥ best", feasibility: "kandidat tidak cukup" };
-const COLORS_LIGHT = {
-  queued:   { fill: "#e8e8e3", stroke: "#888780", text: "#444441" },
-  current:  { fill: "#CECBF6", stroke: "#534AB7", text: "#26215C" },
-  expanded: { fill: "#f7f7f4", stroke: "#c4c2b8", text: "#88878a" },
-  pruned:   { fill: "#F7C1C1", stroke: "#A32D2D", text: "#791F1F" },
-  solution: { fill: "#9FE1CB", stroke: "#0F6E56", text: "#04342C" },
-};
-const COLORS_DARK = {
-  queued:   { fill: "#3a3833", stroke: "#8a877d", text: "#d8d5cc" },
-  current:  { fill: "#534AB7", stroke: "#CECBF6", text: "#ffffff" },
-  expanded: { fill: "#2e2c28", stroke: "#5a574f", text: "#9b988f" },
-  pruned:   { fill: "#7a2e2e", stroke: "#e0a0a0", text: "#f7d6d6" },
-  solution: { fill: "#0F6E56", stroke: "#9FE1CB", text: "#eafff7" },
-};
-// Palet aktif; di-switch oleh applyTheme() (default dark mengikuti tema halaman).
-let COLORS = COLORS_DARK;
-const XGAP = 56, YGAP = 66, R = 16;
-const PW = 520, PH = 130;            // viewBox grafik progres
-
-let trace = [], nodes = {}, data = null;
-let lastSensitivity = null;            // {vary, fixed_label, rows} untuk disertakan ke PDF
-let step = 0, playing = false, timer = null;
-let treeEls = {}, edgeEls = {}, shown = new Set();   // elemen SVG persisten (keyed)
-let candEls = {};                                     // baris kandidat persisten (keyed)
-let series = [];                                      // {queue, best} per langkah (precompute)
-
-const px = nd => nd.x * XGAP + 40;
-const py = nd => nd.depth * YGAP + 26;
-const esc = s => (window.CSS && CSS.escape) ? CSS.escape(s) : String(s).replace(/"/g, '\\"');
-
-// Membangun struktur pohon (children, depth, posisi x/y) dari event trace
-function buildTree() {
-  nodes = {};
-  for (const e of trace) if (e.type === "node") nodes[e.id] = Object.assign({ children: [] }, e);
-  for (const id in nodes) {
-    const nd = nodes[id];
-    if (nd.parent !== null && nodes[nd.parent]) nodes[nd.parent].children.push(nd.id);
-  }
-  let leaf = 0;
-  (function setPos(id, d) {
-    const nd = nodes[id];
-    nd.depth = d;
-    if (!nd.children.length) { nd.x = leaf++; }
-    else {
-      nd.children.forEach(c => setPos(c, d + 1));
-      nd.x = (nodes[nd.children[0]].x + nodes[nd.children[nd.children.length - 1]].x) / 2;
+    .grid {
+      display: grid;
+      grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+      gap: 12px;
     }
-  })(0, 0);
-}
 
-// Membuat semua elemen SVG sekali (keyed). Render berikutnya hanya memperbarui
-// atribut/visibilitas → memungkinkan transisi CSS dan menghemat kerja DOM.
-function initTree() {
-  const svg = $("tree");
-  treeEls = {}; edgeEls = {}; shown = new Set();
-  const ids = Object.keys(nodes);
-  if (!ids.length) { svg.innerHTML = ""; return; }
-
-  let maxX = 0, maxD = 0;
-  ids.forEach(id => { maxX = Math.max(maxX, nodes[id].x); maxD = Math.max(maxD, nodes[id].depth); });
-  const W = maxX * XGAP + 80, H = (maxD + 1) * YGAP + 20;
-  svg.setAttribute("width", W); svg.setAttribute("height", H);
-
-  let edges = "", circles = "";
-  for (const id of ids) {
-    const nd = nodes[id];
-    if (nd.parent !== null && nodes[nd.parent]) {
-      const p = nodes[nd.parent];
-      const dash = nd.branch === "exclude" ? ' stroke-dasharray="4 3"' : "";
-      edges += `<line data-edge="${nd.id}" x1="${px(p)}" y1="${py(p)}" x2="${px(nd)}" y2="${py(nd)}" stroke="#b4b2a9" stroke-width="1.2"${dash} style="display:none"/>`;
+    .panel h2 {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--fg-muted);
+      margin: 0 0 8px;
+      text-transform: uppercase;
+      letter-spacing: .04em;
     }
-  }
-  for (const id of ids) {
-    const nd = nodes[id];
-    const label = (nd.bound !== null && nd.bound !== undefined) ? Math.round(nd.bound) : "—";
-    const sel = nd.selected.length ? `{${nd.selected.join(",")}}` : "{}";
-    circles += `<g data-node="${nd.id}" style="display:none"><title>node #${nd.id} · ${nd.branch}\ncost: ${nd.cost}\nbound: ${nd.bound ?? "-"}\nterpilih: ${sel}</title>` +
-      `<circle cx="${px(nd)}" cy="${py(nd)}" r="${R}" stroke-width="1.5"/>` +
-      `<text x="${px(nd)}" y="${py(nd) + 4}" text-anchor="middle" font-size="10">${label}</text></g>`;
-  }
-  svg.innerHTML = edges + circles;
 
-  for (const id of ids) {
-    const g = svg.querySelector(`g[data-node="${nodes[id].id}"]`);
-    treeEls[id] = { g, circle: g.querySelector("circle"), text: g.querySelector("text") };
-    const e = svg.querySelector(`line[data-edge="${nodes[id].id}"]`);
-    if (e) edgeEls[id] = e;
-  }
-}
+    .tree-panel {
+      display: flex;
+      flex-direction: column;
+    }
 
-// Mereplay event 0..step dan menghasilkan state visual saat ini
-function computeState() {
-  const st = { status: {}, queue: [], best: null, bestId: null, lastCurrent: null,
-               currentNode: null, counts: { gen: 0, pop: 0, pruned: 0 }, logs: [] };
-  for (let i = 0; i < step; i++) {
-    const e = trace[i];
-    if (e.type === "node") {
-      st.counts.gen++;
-      if (e.status === "pushed") {
-        st.status[e.id] = "queued";
-        st.queue.push({ id: e.id, bound: e.bound, cost: e.cost, selected: e.selected });
-        st.logs.push({ t: `+ node #${e.id} (${e.branch}) bound=${e.bound} → antrian`, c: "" });
-      } else {
-        st.status[e.id] = "pruned"; st.counts.pruned++;
-        st.logs.push({ t: `- node #${e.id} dipangkas saat pembangkitan — ${REASONS[e.reason]}`, c: "pr" });
+    .tree-scroll {
+      overflow: auto;
+      flex: 1;
+      min-height: 0;
+    }
+
+    .legend {
+      display: flex;
+      gap: 14px;
+      font-size: 12px;
+      color: var(--text-faint);
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid var(--divider);
+      flex-wrap: wrap;
+      flex-shrink: 0;
+    }
+
+    .legend span::before {
+      content: "";
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-right: 5px;
+      vertical-align: -1px;
+    }
+
+    .lg-q::before {
+      background: #e8e8e3;
+      border: 1px solid #888780;
+    }
+
+    .lg-c::before {
+      background: #CECBF6;
+      border: 1px solid #534AB7;
+    }
+
+    .lg-p::before {
+      background: #F7C1C1;
+      border: 1px solid #A32D2D;
+    }
+
+    .lg-e::before {
+      background: #f7f7f4;
+      border: 1px solid #c4c2b8;
+    }
+
+    .lg-s::before {
+      background: #9FE1CB;
+      border: 1px solid #0F6E56;
+    }
+
+    /* Swatch legenda mengikuti palet node pada tema gelap */
+    :root[data-theme="dark"] .lg-q::before {
+      background: #3a3833;
+      border-color: #8a877d;
+    }
+
+    :root[data-theme="dark"] .lg-c::before {
+      background: #534AB7;
+      border-color: #CECBF6;
+    }
+
+    :root[data-theme="dark"] .lg-p::before {
+      background: #7a2e2e;
+      border-color: #e0a0a0;
+    }
+
+    :root[data-theme="dark"] .lg-e::before {
+      background: #2e2c28;
+      border-color: #5a574f;
+    }
+
+    :root[data-theme="dark"] .lg-s::before {
+      background: #0F6E56;
+      border-color: #9FE1CB;
+    }
+
+    .mono {
+      font-family: Consolas, monospace;
+      font-size: 12px;
+    }
+
+    /* ---- Header + tombol toggle tampilan ---- */
+    .appbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .theme-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .theme-toggle #themeIcon {
+      font-size: 15px;
+      line-height: 1;
+    }
+
+    .tt-label {
+      font-size: 13px;
+    }
+
+    /* ---- Animasi pohon ---- */
+    #tree circle {
+      transition: fill .28s ease, stroke .28s ease;
+    }
+
+    #tree text {
+      transition: fill .28s ease;
+    }
+
+    #tree g.enter {
+      animation: fadeIn .3s ease;
+    }
+
+    #tree g.current circle {
+      animation: pulse 1.1s ease-in-out infinite;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
       }
-    } else if (e.type === "pop") {
-      st.counts.pop++;
-      st.queue = st.queue.filter(q => q.id !== e.id);
-      if (st.lastCurrent !== null && st.status[st.lastCurrent] === "current") st.status[st.lastCurrent] = "expanded";
-      st.status[e.id] = "current";
-      st.lastCurrent = e.id;
-      const nd = nodes[e.id] || {};
-      st.currentNode = {
-        id: e.id,
-        selected: nd.selected || [],
-        cost: (nd.cost != null ? nd.cost : e.cost),
-        bound: (nd.bound != null ? nd.bound : e.bound),
-        index: (nd.index != null ? nd.index : -1),
+
+      to {
+        opacity: 1;
+      }
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        stroke-width: 1.5;
+      }
+
+      50% {
+        stroke-width: 4;
+      }
+    }
+
+    /* ---- Priority queue ---- */
+    #queue {
+      height: 250px;
+      overflow-y: auto;
+    }
+
+    #queue div {
+      padding: 3px 8px;
+      border-radius: 5px;
+      line-height: 1.7;
+      transition: background .25s;
+    }
+
+    #queue div.next {
+      background: var(--qnext-bg);
+      color: var(--qnext-fg);
+      font-weight: 600;
+    }
+
+    #queue .qsel {
+      color: var(--fg-muted);
+    }
+
+    #queue .qmore {
+      color: #999;
+    }
+
+    #queue b {
+      color: var(--qb);
+    }
+
+    /* ---- Daftar kandidat live ---- */
+    .cand-head {
+      font-size: 12px;
+      color: var(--text-soft);
+      margin-bottom: 8px;
+      line-height: 1.5;
+    }
+
+    .cand-head b {
+      color: var(--fg);
+    }
+
+    #cands {
+      max-height: 360px;
+      overflow-y: auto;
+    }
+
+    .cand {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 4px 8px;
+      border-radius: 6px;
+      margin-bottom: 3px;
+      transition: background .25s ease, color .25s ease, opacity .25s ease;
+    }
+
+    .cand .cn {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .cand .cr {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .cand .badge {
+      font-size: 10px;
+      padding: 1px 6px;
+      border-radius: 10px;
+      min-width: 0;
+    }
+
+    .cand .cc {
+      font-variant-numeric: tabular-nums;
+    }
+
+    .cand.pend {
+      background: var(--panel-bg);
+      color: var(--fg);
+    }
+
+    .cand.inc {
+      background: var(--cand-inc-bg);
+      color: var(--cand-inc-fg);
+    }
+
+    .cand.inc .badge {
+      background: #9FE1CB;
+      color: #04342C;
+    }
+
+    .cand.exc {
+      background: var(--cand-exc-bg);
+      color: var(--cand-exc-fg);
+    }
+
+    .cand.exc .cn {
+      text-decoration: line-through;
+    }
+
+    .cand.exc .badge {
+      background: var(--cand-exc-badge-bg);
+      color: var(--cand-exc-badge-fg);
+    }
+
+    /* ---- Log ---- */
+    #log {
+      height: 200px;
+      overflow-y: auto;
+      line-height: 1.8;
+      color: var(--text-soft);
+    }
+
+    #log .pr {
+      color: #A32D2D;
+    }
+
+    #log .inc {
+      color: #0F6E56;
+      font-weight: 600;
+    }
+
+    /* ---- Progres ---- */
+    #progress {
+      width: 100%;
+      height: 130px;
+      display: block;
+    }
+
+    .prog-legend {
+      display: flex;
+      gap: 16px;
+      font-size: 12px;
+      color: var(--text-faint);
+      margin-top: 6px;
+      flex-wrap: wrap;
+    }
+
+    .prog-legend span::before {
+      content: "";
+      display: inline-block;
+      width: 16px;
+      height: 3px;
+      margin-right: 6px;
+      vertical-align: middle;
+      border-radius: 2px;
+    }
+
+    .pl-best::before {
+      background: #0F6E56;
+    }
+
+    .pl-queue::before {
+      background: #534AB7;
+    }
+
+    .pl-cur::before {
+      background: #A32D2D;
+      height: 0;
+      border-top: 2px dashed #A32D2D;
+    }
+
+    .playbar {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .playbar input[type=range] {
+      flex: 1;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 10px;
+    }
+
+    .stat {
+      background: var(--btn-hover);
+      border-radius: 8px;
+      padding: 10px 12px;
+    }
+
+    .stat .lbl {
+      font-size: 11px;
+      color: var(--fg-muted);
+    }
+
+    .stat .val {
+      font-size: 20px;
+      font-weight: 600;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    th,
+    td {
+      text-align: left;
+      padding: 6px 10px;
+      border-bottom: 1px solid var(--divider);
+    }
+
+    th {
+      color: var(--fg-muted);
+      font-weight: 600;
+      font-size: 12px;
+    }
+
+    td.num,
+    th.num {
+      text-align: right;
+    }
+
+    #result {
+      display: none;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="appbar">
+      <div>
+        <h1>Visualisasi Branch &amp; Bound</h1>
+        <p class="sub">Pemilihan tim proyek: dari n kandidat pilih k orang dengan total biaya minimum &le; B</p>
+      </div>
+      <button id="themeToggle" class="theme-toggle" title="Ganti tampilan terang/gelap"
+        aria-label="Ganti tampilan terang atau gelap">
+        <span id="themeIcon">&#9790;</span> <span class="tt-label">View Appearance</span>
+      </button>
+    </div>
+
+    <div class="panel">
+      <div class="controls">
+        <label>Dataset</label>
+        <select id="dataset">
+          <option value="small">Small (n=12)</option>
+          <option value="medium">Medium (n=18)</option>
+          <option value="large">Large (n=24)</option>
+        </select>
+        <label>k</label>
+        <input type="number" id="k" value="5" min="5" max="10">
+        <label>B</label>
+        <input type="number" id="B" value="2000">
+        <button class="primary" id="run">Jalankan</button>
+        <button id="pdf" disabled title="Ekspor hasil ke PDF">Unduh PDF</button>
+      </div>
+      <div class="error" id="error"></div>
+    </div>
+
+    <div class="grid">
+      <div class="panel tree-panel">
+        <h2>Pohon pencarian</h2>
+        <div class="tree-scroll"><svg id="tree"></svg></div>
+        <div class="legend">
+          <span class="lg-q">di antrian</span>
+          <span class="lg-c">sedang diekspansi</span>
+          <span class="lg-e">sudah diekspansi</span>
+          <span class="lg-p">dipangkas</span>
+          <span class="lg-s">solusi terbaik</span>
+        </div>
+      </div>
+      <div>
+        <div class="panel">
+          <h2>Daftar kandidat (terurut biaya)</h2>
+          <div class="cand-head" id="candHead">Belum dijalankan.</div>
+          <div id="cands" class="mono">—</div>
+        </div>
+        <div class="panel">
+          <h2>Priority queue (bound terendah)</h2>
+          <div id="queue" class="mono">—</div>
+        </div>
+        <div class="panel">
+          <h2>Log langkah</h2>
+          <div id="log" class="mono">—</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel playbar">
+      <button id="prev" title="Mundur satu langkah">&larr;</button>
+      <button id="play" title="Putar">&#9654;</button>
+      <button id="next" title="Maju satu langkah">&rarr;</button>
+      <input type="range" id="slider" min="0" max="0" value="0" step="1">
+      <span id="stepLabel" class="mono" style="min-width:70px">0 / 0</span>
+      <select id="speed">
+        <option value="0.25">0.25x</option>
+        <option value="0.5">0.5x</option>
+        <option value="1" selected>1x</option>
+        <option value="2">2x</option>
+        <option value="4">4x</option>
+        <option value="8">8x</option>
+      </select>
+    </div>
+
+    <div class="panel">
+      <h2>Progres pencarian</h2>
+      <svg id="progress" viewBox="0 0 520 130" preserveAspectRatio="none"></svg>
+      <div class="prog-legend">
+        <span class="pl-best">Biaya terbaik (incumbent)</span>
+        <span class="pl-queue">Ukuran antrian</span>
+        <span class="pl-cur">Langkah saat ini</span>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Statistik</h2>
+      <div class="stats">
+        <div class="stat">
+          <div class="lbl">Node dibangkitkan</div>
+          <div class="val" id="stGen">0</div>
+        </div>
+        <div class="stat">
+          <div class="lbl">Node dikunjungi (pop)</div>
+          <div class="val" id="stPop">0</div>
+        </div>
+        <div class="stat">
+          <div class="lbl">Dipangkas</div>
+          <div class="val" id="stPrune">0</div>
+        </div>
+        <div class="stat">
+          <div class="lbl">Efisiensi pruning</div>
+          <div class="val" id="stEff">0%</div>
+        </div>
+        <div class="stat">
+          <div class="lbl">Biaya terbaik</div>
+          <div class="val" id="stBest">&mdash;</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Analisis sensitivitas (what-if)</h2>
+      <div class="controls">
+        <label>Variasikan</label>
+        <select id="varyParam">
+          <option value="B">Anggaran (B)</option>
+          <option value="k">Ukuran tim (k)</option>
+        </select>
+        <label>Min</label>
+        <input type="number" id="sLo" value="1500">
+        <label>Max</label>
+        <input type="number" id="sHi" value="3000">
+        <label>Langkah</label>
+        <input type="number" id="sStep" value="250">
+        <button id="sRun" disabled>Jalankan analisis</button>
+      </div>
+      <div class="error" id="sError"></div>
+      <svg id="sensChart" viewBox="0 0 520 160" preserveAspectRatio="none"
+        style="width:100%;height:160px;display:none;margin-top:12px"></svg>
+      <div class="prog-legend" id="sensLegend" style="display:none">
+        <span class="pl-best">Total biaya</span>
+        <span class="pl-queue">Node dikunjungi (pop)</span>
+      </div>
+      <div id="sensTableWrap" style="margin-top:12px"></div>
+    </div>
+
+    <div class="panel" id="result">
+      <h2>Tim terpilih</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>No</th>
+            <th>ID</th>
+            <th>Nama</th>
+            <th class="num">Cost</th>
+          </tr>
+        </thead>
+        <tbody id="teamBody"></tbody>
+        <tfoot>
+          <tr>
+            <th colspan="3">Total biaya</th>
+            <th class="num" id="teamTotal"></th>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    "use strict";
+    const $ = id => document.getElementById(id);
+    const REASONS = { budget: "melebihi anggaran", bound: "bound ≥ best", feasibility: "kandidat tidak cukup" };
+    const COLORS_LIGHT = {
+      queued: { fill: "#e8e8e3", stroke: "#888780", text: "#444441" },
+      current: { fill: "#CECBF6", stroke: "#534AB7", text: "#26215C" },
+      expanded: { fill: "#f7f7f4", stroke: "#c4c2b8", text: "#88878a" },
+      pruned: { fill: "#F7C1C1", stroke: "#A32D2D", text: "#791F1F" },
+      solution: { fill: "#9FE1CB", stroke: "#0F6E56", text: "#04342C" },
+    };
+    const COLORS_DARK = {
+      queued: { fill: "#3a3833", stroke: "#8a877d", text: "#d8d5cc" },
+      current: { fill: "#534AB7", stroke: "#CECBF6", text: "#ffffff" },
+      expanded: { fill: "#2e2c28", stroke: "#5a574f", text: "#9b988f" },
+      pruned: { fill: "#7a2e2e", stroke: "#e0a0a0", text: "#f7d6d6" },
+      solution: { fill: "#0F6E56", stroke: "#9FE1CB", text: "#eafff7" },
+    };
+    // Palet aktif; di-switch oleh applyTheme() (default dark mengikuti tema halaman).
+    let COLORS = COLORS_DARK;
+    const XGAP = 56, YGAP = 66, R = 16;
+    const PW = 520, PH = 130;            // viewBox grafik progres
+
+    let trace = [], nodes = {}, data = null;
+    let lastSensitivity = null;            // {vary, fixed_label, rows} untuk disertakan ke PDF
+    let step = 0, playing = false, timer = null;
+    let treeEls = {}, edgeEls = {}, shown = new Set();   // elemen SVG persisten (keyed)
+    let candEls = {};                                     // baris kandidat persisten (keyed)
+    let series = [];                                      // {queue, best} per langkah (precompute)
+
+    const px = nd => nd.x * XGAP + 40;
+    const py = nd => nd.depth * YGAP + 26;
+    const esc = s => (window.CSS && CSS.escape) ? CSS.escape(s) : String(s).replace(/"/g, '\\"');
+
+    // Membangun struktur pohon (children, depth, posisi x/y) dari event trace
+    function buildTree() {
+      nodes = {};
+      for (const e of trace) if (e.type === "node") nodes[e.id] = Object.assign({ children: [] }, e);
+      for (const id in nodes) {
+        const nd = nodes[id];
+        if (nd.parent !== null && nodes[nd.parent]) nodes[nd.parent].children.push(nd.id);
+      }
+      let leaf = 0;
+      (function setPos(id, d) {
+        const nd = nodes[id];
+        nd.depth = d;
+        if (!nd.children.length) { nd.x = leaf++; }
+        else {
+          nd.children.forEach(c => setPos(c, d + 1));
+          nd.x = (nodes[nd.children[0]].x + nodes[nd.children[nd.children.length - 1]].x) / 2;
+        }
+      })(0, 0);
+    }
+
+    // Membuat semua elemen SVG sekali (keyed). Render berikutnya hanya memperbarui
+    // atribut/visibilitas → memungkinkan transisi CSS dan menghemat kerja DOM.
+    function initTree() {
+      const svg = $("tree");
+      treeEls = {}; edgeEls = {}; shown = new Set();
+      const ids = Object.keys(nodes);
+      if (!ids.length) { svg.innerHTML = ""; return; }
+
+      let maxX = 0, maxD = 0;
+      ids.forEach(id => { maxX = Math.max(maxX, nodes[id].x); maxD = Math.max(maxD, nodes[id].depth); });
+      const W = maxX * XGAP + 80, H = (maxD + 1) * YGAP + 20;
+      svg.setAttribute("width", W); svg.setAttribute("height", H);
+
+      let edges = "", circles = "";
+      for (const id of ids) {
+        const nd = nodes[id];
+        if (nd.parent !== null && nodes[nd.parent]) {
+          const p = nodes[nd.parent];
+          const dash = nd.branch === "exclude" ? ' stroke-dasharray="4 3"' : "";
+          edges += `<line data-edge="${nd.id}" x1="${px(p)}" y1="${py(p)}" x2="${px(nd)}" y2="${py(nd)}" stroke="#b4b2a9" stroke-width="1.2"${dash} style="display:none"/>`;
+        }
+      }
+      for (const id of ids) {
+        const nd = nodes[id];
+        const label = (nd.bound !== null && nd.bound !== undefined) ? Math.round(nd.bound) : "—";
+        const sel = nd.selected.length ? `{${nd.selected.join(",")}}` : "{}";
+        circles += `<g data-node="${nd.id}" style="display:none"><title>node #${nd.id} · ${nd.branch}\ncost: ${nd.cost}\nbound: ${nd.bound ?? "-"}\nterpilih: ${sel}</title>` +
+          `<circle cx="${px(nd)}" cy="${py(nd)}" r="${R}" stroke-width="1.5"/>` +
+          `<text x="${px(nd)}" y="${py(nd) + 4}" text-anchor="middle" font-size="10">${label}</text></g>`;
+      }
+      svg.innerHTML = edges + circles;
+
+      for (const id of ids) {
+        const g = svg.querySelector(`g[data-node="${nodes[id].id}"]`);
+        treeEls[id] = { g, circle: g.querySelector("circle"), text: g.querySelector("text") };
+        const e = svg.querySelector(`line[data-edge="${nodes[id].id}"]`);
+        if (e) edgeEls[id] = e;
+      }
+    }
+
+    // Mereplay event 0..step dan menghasilkan state visual saat ini
+    function computeState() {
+      const st = {
+        status: {}, queue: [], best: null, bestId: null, lastCurrent: null,
+        currentNode: null, counts: { gen: 0, pop: 0, pruned: 0 }, logs: []
       };
-      st.logs.push({ t: `▲ pop node #${e.id} (bound ${e.bound})`, c: "" });
-    } else if (e.type === "prune_pop") {
-      st.status[e.id] = "pruned"; st.counts.pruned++;
-      st.logs.push({ t: `- node #${e.id} dipangkas setelah pop — ${REASONS[e.reason]}`, c: "pr" });
-    } else if (e.type === "incumbent") {
-      if (st.bestId !== null && st.status[st.bestId] === "solution") st.status[st.bestId] = "expanded";
-      st.best = e.cost; st.bestId = e.id;
-      st.status[e.id] = "solution";
-      st.logs.push({ t: `★ solusi baru ditemukan: biaya ${e.cost}`, c: "inc" });
+      for (let i = 0; i < step; i++) {
+        const e = trace[i];
+        if (e.type === "node") {
+          st.counts.gen++;
+          if (e.status === "pushed") {
+            st.status[e.id] = "queued";
+            st.queue.push({ id: e.id, bound: e.bound, cost: e.cost, selected: e.selected });
+            st.logs.push({ t: `+ node #${e.id} (${e.branch}) bound=${e.bound} → antrian`, c: "" });
+          } else {
+            st.status[e.id] = "pruned"; st.counts.pruned++;
+            st.logs.push({ t: `- node #${e.id} dipangkas saat pembangkitan — ${REASONS[e.reason]}`, c: "pr" });
+          }
+        } else if (e.type === "pop") {
+          st.counts.pop++;
+          st.queue = st.queue.filter(q => q.id !== e.id);
+          if (st.lastCurrent !== null && st.status[st.lastCurrent] === "current") st.status[st.lastCurrent] = "expanded";
+          st.status[e.id] = "current";
+          st.lastCurrent = e.id;
+          const nd = nodes[e.id] || {};
+          st.currentNode = {
+            id: e.id,
+            selected: nd.selected || [],
+            cost: (nd.cost != null ? nd.cost : e.cost),
+            bound: (nd.bound != null ? nd.bound : e.bound),
+            index: (nd.index != null ? nd.index : -1),
+          };
+          st.logs.push({ t: `▲ pop node #${e.id} (bound ${e.bound})`, c: "" });
+        } else if (e.type === "prune_pop") {
+          st.status[e.id] = "pruned"; st.counts.pruned++;
+          st.logs.push({ t: `- node #${e.id} dipangkas setelah pop — ${REASONS[e.reason]}`, c: "pr" });
+        } else if (e.type === "incumbent") {
+          if (st.bestId !== null && st.status[st.bestId] === "solution") st.status[st.bestId] = "expanded";
+          st.best = e.cost; st.bestId = e.id;
+          st.status[e.id] = "solution";
+          st.logs.push({ t: `★ solusi baru ditemukan: biaya ${e.cost}`, c: "inc" });
+        }
+      }
+      return st;
     }
-  }
-  return st;
-}
 
-// Update elemen pohon (keyed): hanya ubah warna/visibilitas, tidak rebuild.
-function renderTree(st) {
-  for (const id in treeEls) {
-    const el = treeEls[id], s = st.status[id];
-    if (!s) {
-      if (el.g.style.display !== "none") { el.g.style.display = "none"; shown.delete(id); }
-      if (edgeEls[id]) edgeEls[id].style.display = "none";
-      continue;
+    // Update elemen pohon (keyed): hanya ubah warna/visibilitas, tidak rebuild.
+    function renderTree(st) {
+      for (const id in treeEls) {
+        const el = treeEls[id], s = st.status[id];
+        if (!s) {
+          if (el.g.style.display !== "none") { el.g.style.display = "none"; shown.delete(id); }
+          if (edgeEls[id]) edgeEls[id].style.display = "none";
+          continue;
+        }
+        const c = COLORS[s];
+        el.circle.style.fill = c.fill;
+        el.circle.style.stroke = c.stroke;
+        el.text.style.fill = c.text;
+        let cls = s;
+        if (!shown.has(id)) { cls += " enter"; shown.add(id); }
+        el.g.setAttribute("class", cls);
+        el.g.style.display = "";
+        const e = edgeEls[id];
+        if (e) {
+          const pid = nodes[id].parent;
+          e.style.display = (pid !== null && st.status[pid]) ? "" : "none";
+        }
+      }
     }
-    const c = COLORS[s];
-    el.circle.style.fill = c.fill;
-    el.circle.style.stroke = c.stroke;
-    el.text.style.fill = c.text;
-    let cls = s;
-    if (!shown.has(id)) { cls += " enter"; shown.add(id); }
-    el.g.setAttribute("class", cls);
-    el.g.style.display = "";
-    const e = edgeEls[id];
-    if (e) {
-      const pid = nodes[id].parent;
-      e.style.display = (pid !== null && st.status[pid]) ? "" : "none";
+
+    // Daftar kandidat live: tandai included / excluded / pending pada node aktif.
+    function renderCandidates(st) {
+      if (!data) return;
+      const cur = st.currentNode;
+      if (!cur) {
+        $("candHead").innerHTML = `Langkah ${step}: belum ada node yang diekspansi — semua kandidat menunggu.`;
+        for (const id in candEls) setCand(id, "pend", "");
+        return;
+      }
+      const selSet = new Set(cur.selected);
+      const m = cur.selected.length;
+      $("candHead").innerHTML =
+        `Node #${cur.id}: terpilih <b>${m}/${data.k}</b> · biaya parsial <b>${Math.round(cur.cost)}</b>` +
+        ` · bound <b>${cur.bound != null ? Math.round(cur.bound) : "—"}</b>`;
+      data.candidates.forEach((c, p) => {
+        if (selSet.has(c.id)) setCand(c.id, "inc", "✓ ambil");
+        else if (p <= cur.index) setCand(c.id, "exc", "✕ lewati");
+        else setCand(c.id, "pend", "");
+      });
     }
-  }
-}
+    function setCand(id, cls, badge) {
+      const el = candEls[id];
+      if (!el) return;
+      el.row.className = "cand " + cls;
+      el.badge.textContent = badge;
+    }
 
-// Daftar kandidat live: tandai included / excluded / pending pada node aktif.
-function renderCandidates(st) {
-  if (!data) return;
-  const cur = st.currentNode;
-  if (!cur) {
-    $("candHead").innerHTML = `Langkah ${step}: belum ada node yang diekspansi — semua kandidat menunggu.`;
-    for (const id in candEls) setCand(id, "pend", "");
-    return;
-  }
-  const selSet = new Set(cur.selected);
-  const m = cur.selected.length;
-  $("candHead").innerHTML =
-    `Node #${cur.id}: terpilih <b>${m}/${data.k}</b> · biaya parsial <b>${Math.round(cur.cost)}</b>` +
-    ` · bound <b>${cur.bound != null ? Math.round(cur.bound) : "—"}</b>`;
-  data.candidates.forEach((c, p) => {
-    if (selSet.has(c.id)) setCand(c.id, "inc", "✓ ambil");
-    else if (p <= cur.index) setCand(c.id, "exc", "✕ lewati");
-    else setCand(c.id, "pend", "");
-  });
-}
-function setCand(id, cls, badge) {
-  const el = candEls[id];
-  if (!el) return;
-  el.row.className = "cand " + cls;
-  el.badge.textContent = badge;
-}
+    // Grafik progres: dua sparkline (biaya terbaik & ukuran antrian) + cursor langkah.
+    function computeSeries() {
+      series = [{ queue: 0, best: null }];
+      const q = new Set();
+      let best = Infinity;
+      for (let i = 0; i < trace.length; i++) {
+        const e = trace[i];
+        if (e.type === "node") { if (e.status === "pushed") q.add(e.id); }
+        else if (e.type === "pop") { q.delete(e.id); }
+        else if (e.type === "incumbent") { if (e.cost < best) best = e.cost; }
+        series.push({ queue: q.size, best: best === Infinity ? null : best });
+      }
+    }
+    function renderProgress(cur) {
+      const svg = $("progress");
+      if (series.length < 2) { svg.innerHTML = ""; return; }
+      const padL = 6, padR = 6, padT = 12, padB = 12;
+      const n = series.length - 1;
+      const x = i => padL + (n ? i / n * (PW - padL - padR) : 0);
+      const maxQ = Math.max(1, ...series.map(s => s.queue));
+      const bestVals = series.map(s => s.best).filter(v => v != null);
+      const maxB = bestVals.length ? Math.max(...bestVals) : 1;
+      const minB = bestVals.length ? Math.min(...bestVals) : 0;
+      const yQ = v => padT + (1 - v / maxQ) * (PH - padT - padB);
+      const yB = v => (maxB === minB) ? padT : padT + (1 - (v - minB) / (maxB - minB)) * (PH - padT - padB);
 
-// Grafik progres: dua sparkline (biaya terbaik & ukuran antrian) + cursor langkah.
-function computeSeries() {
-  series = [{ queue: 0, best: null }];
-  const q = new Set();
-  let best = Infinity;
-  for (let i = 0; i < trace.length; i++) {
-    const e = trace[i];
-    if (e.type === "node") { if (e.status === "pushed") q.add(e.id); }
-    else if (e.type === "pop") { q.delete(e.id); }
-    else if (e.type === "incumbent") { if (e.cost < best) best = e.cost; }
-    series.push({ queue: q.size, best: best === Infinity ? null : best });
-  }
-}
-function renderProgress(cur) {
-  const svg = $("progress");
-  if (series.length < 2) { svg.innerHTML = ""; return; }
-  const padL = 6, padR = 6, padT = 12, padB = 12;
-  const n = series.length - 1;
-  const x = i => padL + (n ? i / n * (PW - padL - padR) : 0);
-  const maxQ = Math.max(1, ...series.map(s => s.queue));
-  const bestVals = series.map(s => s.best).filter(v => v != null);
-  const maxB = bestVals.length ? Math.max(...bestVals) : 1;
-  const minB = bestVals.length ? Math.min(...bestVals) : 0;
-  const yQ = v => padT + (1 - v / maxQ) * (PH - padT - padB);
-  const yB = v => (maxB === minB) ? padT : padT + (1 - (v - minB) / (maxB - minB)) * (PH - padT - padB);
+      const pQ = series.map((s, i) => `${i ? "L" : "M"}${x(i).toFixed(1)} ${yQ(s.queue).toFixed(1)}`).join(" ");
+      let pB = "", started = false;
+      series.forEach((s, i) => {
+        if (s.best != null) { pB += `${started ? "L" : "M"}${x(i).toFixed(1)} ${yB(s.best).toFixed(1)} `; started = true; }
+      });
+      const cx = x(cur).toFixed(1);
+      svg.innerHTML =
+        `<path d="${pQ}" fill="none" stroke="#534AB7" stroke-width="1.6"/>` +
+        (pB ? `<path d="${pB}" fill="none" stroke="#0F6E56" stroke-width="2"/>` : "") +
+        `<line x1="${cx}" y1="${padT}" x2="${cx}" y2="${PH - padB}" stroke="#A32D2D" stroke-width="1" stroke-dasharray="3 3"/>`;
+    }
 
-  const pQ = series.map((s, i) => `${i ? "L" : "M"}${x(i).toFixed(1)} ${yQ(s.queue).toFixed(1)}`).join(" ");
-  let pB = "", started = false;
-  series.forEach((s, i) => {
-    if (s.best != null) { pB += `${started ? "L" : "M"}${x(i).toFixed(1)} ${yB(s.best).toFixed(1)} `; started = true; }
-  });
-  const cx = x(cur).toFixed(1);
-  svg.innerHTML =
-    `<path d="${pQ}" fill="none" stroke="#534AB7" stroke-width="1.6"/>` +
-    (pB ? `<path d="${pB}" fill="none" stroke="#0F6E56" stroke-width="2"/>` : "") +
-    `<line x1="${cx}" y1="${padT}" x2="${cx}" y2="${PH - padB}" stroke="#A32D2D" stroke-width="1" stroke-dasharray="3 3"/>`;
-}
+    function render() {
+      const st = computeState();
+      renderTree(st);
+      renderCandidates(st);
+      renderProgress(step);
 
-function render() {
-  const st = computeState();
-  renderTree(st);
-  renderCandidates(st);
-  renderProgress(step);
+      const q = [...st.queue].sort((a, b) => a.bound - b.bound);
+      $("queue").innerHTML = q.length
+        ? q.slice(0, 8).map((x, i) => {
+          const sel = (x.selected && x.selected.length) ? `{${x.selected.join(",")}}` : "{}";
+          const m = x.selected ? x.selected.length : 0;
+          return `<div class="${i === 0 ? "next" : ""}">bound <b>${Math.round(x.bound)}</b>` +
+            ` · biaya ${Math.round(x.cost)} · <span class="qsel">${sel} (${m}/${data.k})</span> · #${x.id}</div>`;
+        }).join("") +
+        (q.length > 8 ? `<div class="qmore">… +${q.length - 8} node lainnya</div>` : "")
+        : "<div>(kosong)</div>";
 
-  const q = [...st.queue].sort((a, b) => a.bound - b.bound);
-  $("queue").innerHTML = q.length
-    ? q.slice(0, 8).map((x, i) => {
-        const sel = (x.selected && x.selected.length) ? `{${x.selected.join(",")}}` : "{}";
-        const m = x.selected ? x.selected.length : 0;
-        return `<div class="${i === 0 ? "next" : ""}">bound <b>${Math.round(x.bound)}</b>` +
-               ` · biaya ${Math.round(x.cost)} · <span class="qsel">${sel} (${m}/${data.k})</span> · #${x.id}</div>`;
-      }).join("") +
-      (q.length > 8 ? `<div class="qmore">… +${q.length - 8} node lainnya</div>` : "")
-    : "<div>(kosong)</div>";
+      $("log").innerHTML = st.logs.length
+        ? st.logs.slice(-10).map(l => `<div class="${l.c}">${l.t}</div>`).join("")
+        : "—";
+      $("log").scrollTop = $("log").scrollHeight;
 
-  $("log").innerHTML = st.logs.length
-    ? st.logs.slice(-10).map(l => `<div class="${l.c}">${l.t}</div>`).join("")
-    : "—";
-  $("log").scrollTop = $("log").scrollHeight;
+      $("stGen").textContent = st.counts.gen;
+      $("stPop").textContent = st.counts.pop;
+      $("stPrune").textContent = st.counts.pruned;
+      $("stEff").textContent = st.counts.gen ? (st.counts.pruned / st.counts.gen * 100).toFixed(1) + "%" : "0%";
+      $("stBest").textContent = st.best !== null ? Math.round(st.best) : "—";
 
-  $("stGen").textContent = st.counts.gen;
-  $("stPop").textContent = st.counts.pop;
-  $("stPrune").textContent = st.counts.pruned;
-  $("stEff").textContent = st.counts.gen ? (st.counts.pruned / st.counts.gen * 100).toFixed(1) + "%" : "0%";
-  $("stBest").textContent = st.best !== null ? Math.round(st.best) : "—";
+      $("slider").value = step;
+      $("stepLabel").textContent = `${step} / ${trace.length}`;
+      $("result").style.display = (step === trace.length && data && data.team.length) ? "block" : "none";
+      $("play").innerHTML = playing ? "&#10074;&#10074;" : "&#9654;";
+    }
 
-  $("slider").value = step;
-  $("stepLabel").textContent = `${step} / ${trace.length}`;
-  $("result").style.display = (step === trace.length && data && data.team.length) ? "block" : "none";
-  $("play").innerHTML = playing ? "&#10074;&#10074;" : "&#9654;";
-}
+    function setStep(s) {
+      step = Math.max(0, Math.min(trace.length, s));
+      if (step === trace.length) stopPlay();
+      render();
+    }
+    function stopPlay() { playing = false; clearInterval(timer); }
+    function togglePlay() {
+      if (playing) { stopPlay(); render(); return; }
+      if (!trace.length) return;
+      if (step >= trace.length) step = 0;
+      playing = true;
+      timer = setInterval(() => setStep(step + 1), 1200 / Number($("speed").value));
+      render();
+    }
 
-function setStep(s) {
-  step = Math.max(0, Math.min(trace.length, s));
-  if (step === trace.length) stopPlay();
-  render();
-}
-function stopPlay() { playing = false; clearInterval(timer); }
-function togglePlay() {
-  if (playing) { stopPlay(); render(); return; }
-  if (!trace.length) return;
-  if (step >= trace.length) step = 0;
-  playing = true;
-  timer = setInterval(() => setStep(step + 1), 1200 / Number($("speed").value));
-  render();
-}
+    async function run() {
+      stopPlay();
+      $("error").textContent = "";
+      $("run").disabled = true;
+      try {
+        const res = await fetch("/api/solve", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ dataset: $("dataset").value, k: $("k").value, B: $("B").value }),
+        });
+        const body = await res.json();
+        if (!res.ok) { $("error").textContent = body.error || "Terjadi kesalahan."; return; }
+        data = body;
+        trace = body.trace;
+        buildTree();
+        initTree();
+        computeSeries();
+        $("slider").max = trace.length;
 
-async function run() {
-  stopPlay();
-  $("error").textContent = "";
-  $("run").disabled = true;
-  try {
-    const res = await fetch("/api/solve", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ dataset: $("dataset").value, k: $("k").value, B: $("B").value }),
-    });
-    const body = await res.json();
-    if (!res.ok) { $("error").textContent = body.error || "Terjadi kesalahan."; return; }
-    data = body;
-    trace = body.trace;
-    buildTree();
-    initTree();
-    computeSeries();
-    $("slider").max = trace.length;
+        // Bangun baris kandidat sekali (keyed) untuk panel live.
+        candEls = {};
+        $("cands").innerHTML = body.candidates.map(c =>
+          `<div class="cand pend" data-id="${c.id}">` +
+          `<span class="cn">${c.id} · ${c.nama}</span>` +
+          `<span class="cr"><span class="badge"></span><span class="cc">${Math.round(c.cost)}</span></span>` +
+          `</div>`).join("");
+        body.candidates.forEach(c => {
+          const row = $("cands").querySelector(`div[data-id="${esc(c.id)}"]`);
+          candEls[c.id] = { row, badge: row.querySelector(".badge") };
+        });
 
-    // Bangun baris kandidat sekali (keyed) untuk panel live.
-    candEls = {};
-    $("cands").innerHTML = body.candidates.map(c =>
-      `<div class="cand pend" data-id="${c.id}">` +
-        `<span class="cn">${c.id} · ${c.nama}</span>` +
-        `<span class="cr"><span class="badge"></span><span class="cc">${Math.round(c.cost)}</span></span>` +
-      `</div>`).join("");
-    body.candidates.forEach(c => {
-      const row = $("cands").querySelector(`div[data-id="${esc(c.id)}"]`);
-      candEls[c.id] = { row, badge: row.querySelector(".badge") };
-    });
+        $("teamBody").innerHTML = body.team.map((c, i) =>
+          `<tr><td>${i + 1}</td><td>${c.id}</td><td>${c.nama}</td><td class="num">${c.cost}</td></tr>`).join("");
+        $("teamTotal").textContent = body.total_cost;
+        setStep(0);
 
-    $("teamBody").innerHTML = body.team.map((c, i) =>
-      `<tr><td>${i + 1}</td><td>${c.id}</td><td>${c.nama}</td><td class="num">${c.cost}</td></tr>`).join("");
-    $("teamTotal").textContent = body.total_cost;
-    setStep(0);
+        // Aktifkan ekspor PDF & analisis sensitivitas; reset hasil sensitivitas lama.
+        $("pdf").disabled = false;
+        $("sRun").disabled = false;
+        lastSensitivity = null;
+        $("sensChart").style.display = "none";
+        $("sensLegend").style.display = "none";
+        $("sensTableWrap").innerHTML = "";
+        $("sError").textContent = "";
 
-    // Aktifkan ekspor PDF & analisis sensitivitas; reset hasil sensitivitas lama.
-    $("pdf").disabled = false;
-    $("sRun").disabled = false;
-    lastSensitivity = null;
-    $("sensChart").style.display = "none";
-    $("sensLegend").style.display = "none";
-    $("sensTableWrap").innerHTML = "";
-    $("sError").textContent = "";
+        togglePlay();
+      } catch (err) {
+        $("error").textContent = "Gagal terhubung ke server: " + err.message;
+      } finally {
+        $("run").disabled = false;
+      }
+    }
 
-    togglePlay();
-  } catch (err) {
-    $("error").textContent = "Gagal terhubung ke server: " + err.message;
-  } finally {
-    $("run").disabled = false;
-  }
-}
-
-// Menjalankan analisis sensitivitas: variasikan B atau k pada satu rentang.
-async function runSensitivity() {
-  $("sError").textContent = "";
-  const vary = $("varyParam").value;
-  const payload = {
-    dataset: $("dataset").value, k: $("k").value, B: $("B").value,
-    vary, lo: $("sLo").value, hi: $("sHi").value, step: $("sStep").value,
-  };
-  $("sRun").disabled = true;
-  try {
-    const res = await fetch("/api/sensitivity", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    const body = await res.json();
-    if (!res.ok) { $("sError").textContent = body.error || "Terjadi kesalahan."; return; }
-    lastSensitivity = { vary: body.vary, fixed_label: body.fixed_label, rows: body.rows };
-    renderSensitivity(body);
-  } catch (err) {
-    $("sError").textContent = "Gagal terhubung ke server: " + err.message;
-  } finally {
-    $("sRun").disabled = false;
-  }
-}
-
-// Menggambar dua sparkline (total biaya & node dikunjungi) + tabel ringkas.
-function renderSensitivity(body) {
-  const rows = body.rows || [];
-  const header = body.vary === "B" ? "Anggaran (B)" : "Ukuran tim (k)";
-  const svg = $("sensChart");
-  if (!rows.length) {
-    svg.style.display = "none";
-    $("sensLegend").style.display = "none";
-    $("sensTableWrap").innerHTML = "<div class='cand-head'>Tidak ada titik analisis dalam rentang.</div>";
-    return;
-  }
-
-  const W = 520, H = 160, padL = 8, padR = 8, padT = 14, padB = 26;
-  const n = rows.length;
-  const x = i => padL + (n > 1 ? i / (n - 1) * (W - padL - padR) : (W - padL - padR) / 2 + padL);
-
-  // Deret biaya (lewati titik infeasible) & deret node (selalu ada).
-  const costVals = rows.map(r => r.feasible ? r.total_cost : null);
-  const nodeVals = rows.map(r => r.nodes_visited);
-  const scaledPath = (vals) => {
-    const valid = vals.filter(v => v != null);
-    if (!valid.length) return "";
-    const mn = Math.min(...valid), mx = Math.max(...valid);
-    const y = v => (mx === mn) ? padT : padT + (1 - (v - mn) / (mx - mn)) * (H - padT - padB);
-    let d = "", started = false;
-    vals.forEach((v, i) => {
-      if (v == null) { started = false; return; }
-      d += `${started ? "L" : "M"}${x(i).toFixed(1)} ${y(v).toFixed(1)} `;
-      started = true;
-    });
-    return d;
-  };
-
-  const pCost = scaledPath(costVals);
-  const pNode = scaledPath(nodeVals);
-  const labels = rows.map((r, i) =>
-    `<text x="${x(i).toFixed(1)}" y="${H - 8}" text-anchor="middle" font-size="9" fill="#888">${r.param}</text>`).join("");
-
-  svg.innerHTML =
-    (pNode ? `<path d="${pNode}" fill="none" stroke="#534AB7" stroke-width="1.6"/>` : "") +
-    (pCost ? `<path d="${pCost}" fill="none" stroke="#0F6E56" stroke-width="2"/>` : "") +
-    labels;
-  svg.style.display = "block";
-  $("sensLegend").style.display = "flex";
-
-  // Tabel ringkas
-  const trs = rows.map(r => {
-    const cost = r.feasible ? Math.round(r.total_cost).toLocaleString() : "<span style='color:#A32D2D'>infeasible</span>";
-    const node = r.feasible ? r.nodes_visited.toLocaleString() : "—";
-    const t = r.feasible ? r.exec_time.toFixed(5) : "—";
-    return `<tr><td>${r.param}</td><td class="num">${cost}</td><td class="num">${node}</td><td class="num">${t}</td></tr>`;
-  }).join("");
-  $("sensTableWrap").innerHTML =
-    `<div class="cand-head">Parameter tetap: <b>${body.fixed_label}</b></div>` +
-    `<table><thead><tr><th>${header}</th><th class="num">Total biaya</th>` +
-    `<th class="num">Node pop</th><th class="num">Waktu (s)</th></tr></thead><tbody>${trs}</tbody></table>`;
-}
-
-// Mengunduh ringkasan PDF (menyertakan hasil sensitivitas terakhir bila ada).
-async function downloadPdf() {
-  $("error").textContent = "";
-  $("pdf").disabled = true;
-  try {
-    const res = await fetch("/api/export/pdf", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+    // Menjalankan analisis sensitivitas: variasikan B atau k pada satu rentang.
+    async function runSensitivity() {
+      $("sError").textContent = "";
+      const vary = $("varyParam").value;
+      const payload = {
         dataset: $("dataset").value, k: $("k").value, B: $("B").value,
-        sensitivity: lastSensitivity,
-      }),
-    });
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      $("error").textContent = body.error || "Gagal membuat PDF.";
-      return;
+        vary, lo: $("sLo").value, hi: $("sHi").value, step: $("sStep").value,
+      };
+      $("sRun").disabled = true;
+      try {
+        const res = await fetch("/api/sensitivity", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const body = await res.json();
+        if (!res.ok) { $("sError").textContent = body.error || "Terjadi kesalahan."; return; }
+        lastSensitivity = { vary: body.vary, fixed_label: body.fixed_label, rows: body.rows };
+        renderSensitivity(body);
+      } catch (err) {
+        $("sError").textContent = "Gagal terhubung ke server: " + err.message;
+      } finally {
+        $("sRun").disabled = false;
+      }
     }
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "hasil_pemilihan_tim.pdf";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-  } catch (err) {
-    $("error").textContent = "Gagal terhubung ke server: " + err.message;
-  } finally {
-    $("pdf").disabled = false;
-  }
-}
 
-// ---- Tema terang/gelap ----
-const THEME_KEY = "bb-theme";
-function applyTheme(t) {
-  document.documentElement.setAttribute("data-theme", t);
-  COLORS = (t === "dark") ? COLORS_DARK : COLORS_LIGHT;
-  $("themeIcon").innerHTML = (t === "dark") ? "&#9790;" : "&#9728;"; // ☾ / ☀
-  if (trace.length) render(); // gambar ulang SVG pohon dengan palet baru
-}
-function toggleTheme() {
-  const next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
-  localStorage.setItem(THEME_KEY, next);
-  applyTheme(next);
-}
-function initTheme() {
-  applyTheme(localStorage.getItem(THEME_KEY) || "dark"); // default dark
-}
+    // Menggambar dua sparkline (total biaya & node dikunjungi) + tabel ringkas.
+    function renderSensitivity(body) {
+      const rows = body.rows || [];
+      const header = body.vary === "B" ? "Anggaran (B)" : "Ukuran tim (k)";
+      const svg = $("sensChart");
+      if (!rows.length) {
+        svg.style.display = "none";
+        $("sensLegend").style.display = "none";
+        $("sensTableWrap").innerHTML = "<div class='cand-head'>Tidak ada titik analisis dalam rentang.</div>";
+        return;
+      }
 
-$("themeToggle").addEventListener("click", toggleTheme);
-$("run").addEventListener("click", run);
-$("pdf").addEventListener("click", downloadPdf);
-$("sRun").addEventListener("click", runSensitivity);
-$("play").addEventListener("click", togglePlay);
-$("prev").addEventListener("click", () => { stopPlay(); setStep(step - 1); });
-$("next").addEventListener("click", () => { stopPlay(); setStep(step + 1); });
-$("slider").addEventListener("input", e => { stopPlay(); setStep(Number(e.target.value)); });
-$("speed").addEventListener("change", () => { if (playing) { stopPlay(); togglePlay(); } });
-document.addEventListener("keydown", e => {
-  if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT") return;
-  if (e.key === "ArrowLeft") { stopPlay(); setStep(step - 1); }
-  if (e.key === "ArrowRight") { stopPlay(); setStep(step + 1); }
-  if (e.key === " ") { e.preventDefault(); togglePlay(); }
-});
+      const W = 520, H = 160, padL = 8, padR = 8, padT = 14, padB = 26;
+      const n = rows.length;
+      const x = i => padL + (n > 1 ? i / (n - 1) * (W - padL - padR) : (W - padL - padR) / 2 + padL);
 
-initTheme();
-</script>
+      // Deret biaya (lewati titik infeasible) & deret node (selalu ada).
+      const costVals = rows.map(r => r.feasible ? r.total_cost : null);
+      const nodeVals = rows.map(r => r.nodes_visited);
+      const scaledPath = (vals) => {
+        const valid = vals.filter(v => v != null);
+        if (!valid.length) return "";
+        const mn = Math.min(...valid), mx = Math.max(...valid);
+        const y = v => (mx === mn) ? padT : padT + (1 - (v - mn) / (mx - mn)) * (H - padT - padB);
+        let d = "", started = false;
+        vals.forEach((v, i) => {
+          if (v == null) { started = false; return; }
+          d += `${started ? "L" : "M"}${x(i).toFixed(1)} ${y(v).toFixed(1)} `;
+          started = true;
+        });
+        return d;
+      };
+
+      const pCost = scaledPath(costVals);
+      const pNode = scaledPath(nodeVals);
+      const labels = rows.map((r, i) =>
+        `<text x="${x(i).toFixed(1)}" y="${H - 8}" text-anchor="middle" font-size="9" fill="#888">${r.param}</text>`).join("");
+
+      svg.innerHTML =
+        (pNode ? `<path d="${pNode}" fill="none" stroke="#534AB7" stroke-width="1.6"/>` : "") +
+        (pCost ? `<path d="${pCost}" fill="none" stroke="#0F6E56" stroke-width="2"/>` : "") +
+        labels;
+      svg.style.display = "block";
+      $("sensLegend").style.display = "flex";
+
+      // Tabel ringkas
+      const trs = rows.map(r => {
+        const cost = r.feasible ? Math.round(r.total_cost).toLocaleString() : "<span style='color:#A32D2D'>infeasible</span>";
+        const node = r.feasible ? r.nodes_visited.toLocaleString() : "—";
+        const t = r.feasible ? r.exec_time.toFixed(5) : "—";
+        return `<tr><td>${r.param}</td><td class="num">${cost}</td><td class="num">${node}</td><td class="num">${t}</td></tr>`;
+      }).join("");
+      $("sensTableWrap").innerHTML =
+        `<div class="cand-head">Parameter tetap: <b>${body.fixed_label}</b></div>` +
+        `<table><thead><tr><th>${header}</th><th class="num">Total biaya</th>` +
+        `<th class="num">Node pop</th><th class="num">Waktu (s)</th></tr></thead><tbody>${trs}</tbody></table>`;
+    }
+
+    // Mengunduh ringkasan PDF (menyertakan hasil sensitivitas terakhir bila ada).
+    async function downloadPdf() {
+      $("error").textContent = "";
+      $("pdf").disabled = true;
+      try {
+        const res = await fetch("/api/export/pdf", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            dataset: $("dataset").value, k: $("k").value, B: $("B").value,
+            sensitivity: lastSensitivity,
+          }),
+        });
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          $("error").textContent = body.error || "Gagal membuat PDF.";
+          return;
+        }
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "hasil_pemilihan_tim.pdf";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      } catch (err) {
+        $("error").textContent = "Gagal terhubung ke server: " + err.message;
+      } finally {
+        $("pdf").disabled = false;
+      }
+    }
+
+    // ---- Tema terang/gelap ----
+    const THEME_KEY = "bb-theme";
+    function applyTheme(t) {
+      document.documentElement.setAttribute("data-theme", t);
+      COLORS = (t === "dark") ? COLORS_DARK : COLORS_LIGHT;
+      $("themeIcon").innerHTML = (t === "dark") ? "&#9790;" : "&#9728;"; // ☾ / ☀
+      if (trace.length) render(); // gambar ulang SVG pohon dengan palet baru
+    }
+    function toggleTheme() {
+      const next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
+      localStorage.setItem(THEME_KEY, next);
+      applyTheme(next);
+    }
+    function initTheme() {
+      applyTheme(localStorage.getItem(THEME_KEY) || "dark"); // default dark
+    }
+
+    $("themeToggle").addEventListener("click", toggleTheme);
+    $("run").addEventListener("click", run);
+    $("pdf").addEventListener("click", downloadPdf);
+    $("sRun").addEventListener("click", runSensitivity);
+    $("play").addEventListener("click", togglePlay);
+    $("prev").addEventListener("click", () => { stopPlay(); setStep(step - 1); });
+    $("next").addEventListener("click", () => { stopPlay(); setStep(step + 1); });
+    $("slider").addEventListener("input", e => { stopPlay(); setStep(Number(e.target.value)); });
+    $("speed").addEventListener("change", () => { if (playing) { stopPlay(); togglePlay(); } });
+    document.addEventListener("keydown", e => {
+      if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT") return;
+      if (e.key === "ArrowLeft") { stopPlay(); setStep(step - 1); }
+      if (e.key === "ArrowRight") { stopPlay(); setStep(step + 1); }
+      if (e.key === " ") { e.preventDefault(); togglePlay(); }
+    });
+
+    initTheme();
+  </script>
 </body>
+
 </html>
