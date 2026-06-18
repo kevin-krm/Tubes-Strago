@@ -16,7 +16,7 @@ Aplikasi memilih **k** kandidat dari **n** kandidat agar **total biaya minimum**
 | :--- | :--- |
 | Bahasa Pemrograman Algoritma | Python 3 |
 | Framework web | Flask (untuk `app.py`) |
-| Frontend | HTML + CSS + JavaScript (vanilla, tanpa build tool) · SVG untuk pohon pencarian |
+| Frontend | HTML + CSS + JavaScript (vanilla) + SVG untuk pohon pencarian |
 | Pustaka standar | `heapq` (priority queue), `csv`, `math`, `time` |
 | Data | CSV (`datasets/small.csv` n=12, `medium.csv` n=18, `large.csv` n=24) |
 
