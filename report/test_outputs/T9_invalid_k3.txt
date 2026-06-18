@@ -1,0 +1,7 @@
+=======================================================
+      SAMPEL UJI T9 - VALIDASI UKURAN TIM (k < 5)      
+=======================================================
+[INPUT]  k = 3   (dataset Small, B = 2000)
+[OUTPUT]
+> [Notice] Input tidak valid, input range (5 <= k <= 10)
+  (Aplikasi meminta input k diulang, program tidak berhenti.)

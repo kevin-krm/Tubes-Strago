@@ -1,0 +1,7 @@
+=======================================================
+      SAMPEL UJI T11 - VALIDASI INPUT NON-NUMERIK      
+=======================================================
+[INPUT]  k = abc
+[OUTPUT]
+Input tidak valid! Harap masukkan angka.
+  (Aplikasi meminta input k diulang, program tidak berhenti.)
