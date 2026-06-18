@@ -559,7 +559,7 @@
       </div>
       <button id="themeToggle" class="theme-toggle" title="Ganti tampilan terang/gelap"
         aria-label="Ganti tampilan terang atau gelap">
-        <span id="themeIcon">&#9790;</span> <span class="tt-label">View Appearance</span>
+        <span id="themeIcon">&#9790;</span> <span class="tt-label">Ubah Tampilan</span>
       </button>
     </div>
 
@@ -674,8 +674,10 @@
         <input type="number" id="sLo" value="1500">
         <label>Max</label>
         <input type="number" id="sHi" value="3000">
-        <label>Langkah</label>
-        <input type="number" id="sStep" value="250">
+        <span id="sStepWrap" style="display:contents">
+          <label>Langkah</label>
+          <input type="number" id="sStep" value="250">
+        </span>
         <button id="sRun" disabled>Jalankan analisis</button>
       </div>
       <div class="error" id="sError"></div>
@@ -933,10 +935,20 @@
       series.forEach((s, i) => {
         if (s.best != null) { pB += `${started ? "L" : "M"}${x(i).toFixed(1)} ${yB(s.best).toFixed(1)} `; started = true; }
       });
+      // Penanda (marker) di tiap titik data, tampilan "garis dengan penanda".
+      const rect = svg.getBoundingClientRect();
+      const rPix = 3;
+      const rx = (rect.width ? rPix / (rect.width / PW) : rPix).toFixed(2);
+      const ry = (rect.height ? rPix / (rect.height / PH) : rPix).toFixed(2);
+      const mQ = series.map((s, i) =>
+        `<ellipse cx="${x(i).toFixed(1)}" cy="${yQ(s.queue).toFixed(1)}" rx="${rx}" ry="${ry}" fill="#534AB7"/>`).join("");
+      const mB = series.map((s, i) => s.best == null ? "" :
+        `<ellipse cx="${x(i).toFixed(1)}" cy="${yB(s.best).toFixed(1)}" rx="${rx}" ry="${ry}" fill="#0F6E56"/>`).join("");
       const cx = x(cur).toFixed(1);
       svg.innerHTML =
         `<path d="${pQ}" fill="none" stroke="#534AB7" stroke-width="1.6"/>` +
         (pB ? `<path d="${pB}" fill="none" stroke="#0F6E56" stroke-width="2"/>` : "") +
+        mQ + mB +
         `<line x1="${cx}" y1="${padT}" x2="${cx}" y2="${PH - padB}" stroke="#A32D2D" stroke-width="1" stroke-dasharray="3 3"/>`;
     }
 
@@ -1181,6 +1193,12 @@
     $("run").addEventListener("click", run);
     $("pdf").addEventListener("click", downloadPdf);
     $("sRun").addEventListener("click", runSensitivity);
+    // Input "Langkah" tidak relevan saat memvariasikan k (selalu bilangan bulat berurutan).
+    function syncStepVisibility() {
+      $("sStepWrap").style.display = ($("varyParam").value === "k") ? "none" : "contents";
+    }
+    $("varyParam").addEventListener("change", syncStepVisibility);
+    syncStepVisibility();
     $("play").addEventListener("click", togglePlay);
     $("prev").addEventListener("click", () => { stopPlay(); setStep(step - 1); });
     $("next").addEventListener("click", () => { stopPlay(); setStep(step + 1); });
