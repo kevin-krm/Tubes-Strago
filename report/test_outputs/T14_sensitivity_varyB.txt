@@ -1,0 +1,62 @@
+=======================================================
+               HASIL PEMILIHAN TIM PROYEK              
+=======================================================
+Target Anggota Tim (k) : 7 orang
+Batas Anggaran (B)     : 1,500.00
+Dataset Terpilih       : Medium
+
+Daftar Anggota Tim Terpilih:
+  No  | ID     | Nama Kandidat        | Cost      
+  ------------------------------------------------
+  1   | 8      | Susi                 | 35.00     
+  2   | 2      | Lusi                 | 42.00     
+  3   | 14     | Zaki                 | 48.00     
+  4   | 10     | Umar                 | 58.00     
+  5   | 5      | Oki                  | 63.00     
+  6   | 1      | Joko                 | 75.00     
+  7   | 12     | Wawan                | 80.00     
+  ------------------------------------------------
+  Total Biaya Tim             : 401.00
+
+=======================================================
+                STATISTIK BRANCH & BOUND               
+=======================================================
+RUANG PENCARIAN
+  Total kandidat (n)         : 18
+  Ukuran tim (k)             : 7
+  Ruang kombinasi C(18,7)    : 31,824
+  Node dibangkitkan (total)  : 15
+  Node dikunjungi (di-pop)   : 15
+-------------------------------------------------------
+PRUNING
+  Total cabang dipangkas     : 7
+    Berdasarkan waktu:
+    - Saat pembangkitan      : 0
+    - Saat pop (node basi)   : 7
+    Berdasarkan alasan:
+    - Melebihi anggaran      : 0
+    - Bound >= best_cost     : 7
+    - Kandidat tidak cukup   : 0
+  Efisiensi pruning          : 46.7%  (7/15 node)
+-------------------------------------------------------
+ANGGARAN
+  Batas anggaran (B)         : 1,500
+  Total biaya tim terpilih   : 401
+  Budget utilization         : 26.7%  (401 / 1,500)
+-------------------------------------------------------
+PERFORMA
+  Waktu eksekusi             : 0.0000794 detik
+=======================================================
+
+ANALISIS SENSITIVITAS
+  Parameter divariasikan     : Anggaran (B)
+  Parameter tetap            : k = 7
+-------------------------------------------------------
+  Anggaran (B)   |  Total Biaya |  Node pop |  Waktu (s)
+  ---------------------------------------------------
+  300            |   infeasible |         - |          -
+  600            |          401 |        15 |    0.00005
+  900            |          401 |        15 |    0.00005
+  1200           |          401 |        15 |    0.00004
+  1500           |          401 |        15 |    0.00007
+-------------------------------------------------------

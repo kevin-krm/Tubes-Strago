@@ -1,0 +1,7 @@
+=======================================================
+       SAMPEL UJI T13 - VALIDASI PILIHAN DATASET       
+=======================================================
+[INPUT]  k = 5 ; B = 2000 ; dataset = 9 (tidak dikenal)
+[OUTPUT]
+> [Notice] Pilihan dataset tidak dikenali.
+  (Aplikasi meminta input diulang, program tidak berhenti.)
