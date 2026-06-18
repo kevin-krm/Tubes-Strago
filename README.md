@@ -23,7 +23,7 @@ Aplikasi memilih **k** kandidat dari **n** kandidat agar **total biaya minimum**
 > Inti algoritma (`branch_bound.py`, `csv_loader.py`, `candidate.py`, `utils.py`) hanya memakai pustaka standar Python.
 
 > **Dependensi eksternal tidak diperlukan**. 
-> Flask hanya diperlukan untuk visualisasi via antarmuka web.
+> Flask dan Reportlab hanya diperlukan untuk visualisasi via antarmuka web.
 
 ## Struktur singkat
 
